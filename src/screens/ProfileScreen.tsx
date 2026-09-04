@@ -1,9 +1,22 @@
 import React, { useState } from "react";
-import { View, Text, ScrollView, Image, Pressable } from "react-native";
+import { View, Text, ScrollView, Image, Pressable, Alert, Platform } from "react-native";
 import { useMe } from "../hooks/queries";
+import { useAuth } from "../lib/auth";
 import { CommentIcon, GearIcon, StarIcon } from "../components/icons";
 import { ErrorView } from "../components/states";
 import { ProfileSkeleton } from "../components/skeletons";
+
+function confirmSignOut(onConfirm: () => void) {
+  if (Platform.OS === "web") {
+    // web Alert 은 버튼이 없어 즉시 실행
+    onConfirm();
+    return;
+  }
+  Alert.alert("로그아웃", "정말 로그아웃할까요?", [
+    { text: "취소", style: "cancel" },
+    { text: "로그아웃", style: "destructive", onPress: onConfirm },
+  ]);
+}
 
 type ProfileTab = "map" | "timeline" | "wishlist";
 
@@ -18,6 +31,7 @@ function Stat({ value, label }: { value: number; label: string }) {
 
 export default function ProfileScreen() {
   const { data, isLoading, isError, refetch } = useMe();
+  const { signOut } = useAuth();
   const [tab, setTab] = useState<ProfileTab>("map");
 
   if (isLoading) {
@@ -77,6 +91,13 @@ export default function ProfileScreen() {
 
           <Pressable className="w-full items-center py-2.5 border border-border rounded-xl">
             <Text className="text-[13px] font-bold text-ink">프로필 편집</Text>
+          </Pressable>
+
+          <Pressable
+            onPress={() => confirmSignOut(signOut)}
+            className="w-full items-center py-2.5 mt-2"
+          >
+            <Text className="text-[13px] font-bold text-ink-muted">로그아웃</Text>
           </Pressable>
         </View>
 

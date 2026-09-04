@@ -29,7 +29,8 @@
           "cameraPermission": "장소의 사진을 촬영하기 위해 카메라 권한이 필요합니다."
         }
       ],
-      "expo-router"
+      "expo-router",
+      "expo-secure-store"
     ],
     "scheme": "baljachuk"
   }
