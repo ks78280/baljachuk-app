@@ -75,7 +75,15 @@ npm run e2e                # 로그인 → 지도 → 타임라인 → 기록 �
 ## 배포
 
 - **웹** → Vercel: build `npx expo export -p web`, output `dist`. 환경변수 `EXPO_PUBLIC_API_BASE_URL` = Railway API URL, `EXPO_PUBLIC_USE_MOCK=false`.
-- **네이티브** → EAS Build로 Android APK (선택, 미진행).
+- **네이티브** → EAS Build로 Android APK.
+
+  ```bash
+  npx eas-cli login              # Expo 계정 (최초 1회)
+  npx eas-cli build:configure    # eas.json 은 이미 있음 — projectId 만 app.json 에 연결
+  npm run build:android          # = eas build --platform android --profile preview
+  ```
+
+  `preview` 프로필은 `distribution: internal` (Play 스토어 심사 없이 APK 링크로 바로 설치). 빌드 시 `EXPO_PUBLIC_API_BASE_URL` 을 배포된 Railway API로 고정해 `eas.json` 에 박아둠 (`.env` 안 씀 — EAS 클라우드 빌드는 로컬 `.env` 를 안 보므로).
 
 ## 구현 순서 (개발 로그)
 
