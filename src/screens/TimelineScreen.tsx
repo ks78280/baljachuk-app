@@ -14,7 +14,7 @@ const TABS: { key: TimelineTab; label: string }[] = [
 
 export default function TimelineScreen() {
   const [tab, setTab] = useState<TimelineTab>("mine");
-  const { data, isLoading, isError, refetch } = useTimeline(tab);
+  const { data, isLoading, isError, error, refetch } = useTimeline(tab);
   const { openRecord } = useNav();
 
   return (
@@ -46,7 +46,7 @@ export default function TimelineScreen() {
       {isLoading ? (
         <TimelineSkeleton />
       ) : isError ? (
-        <ErrorView onRetry={refetch} />
+        <ErrorView error={error} onRetry={refetch} />
       ) : !data || data.items.length === 0 ? (
         <EmptyView message="아직 기록이 없어요" />
       ) : (

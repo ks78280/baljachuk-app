@@ -10,7 +10,6 @@ import { useQueryClient } from "@tanstack/react-query";
 import { User } from "../types/models";
 import {
   clearTokens,
-  getRefreshToken,
   loadTokens,
   setTokens,
 } from "../api/authToken";
@@ -39,21 +38,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [status, setStatus] = useState<AuthStatus>("loading");
   const [user, setUser] = useState<User | null>(null);
 
-  // 부팅: 저장된 토큰을 복원하고, 있으면 리프레시로 유효성 확인
+  // 부팅: 저장된 토큰을 메모리로 복원. 액세스 토큰이 있으면 일단 신뢰하고,
+  // 만료됐으면 첫 요청에서 client.ts 의 401 인터셉터가 refresh 한다.
+  // (부팅마다 refresh 하면 리프레시 토큰이 매번 로테이션돼 불필요하게 churn)
   useEffect(() => {
     let alive = true;
     (async () => {
-      const { accessToken } = await loadTokens();
+      const { accessToken, refreshToken } = await loadTokens();
       if (!alive) return;
-      if (!accessToken) {
-        setStatus("guest");
+      if (accessToken) {
+        setStatus("authed");
         return;
       }
-      // 저장된 세션이 아직 살아있는지 refresh 로 검증 (목: 항상 성공)
-      const rt = getRefreshToken();
-      if (rt) {
+      if (refreshToken) {
         try {
-          const res = await apiRefresh(rt);
+          const res = await apiRefresh(refreshToken);
           if (!alive) return;
           setTokens({
             accessToken: res.accessToken,
@@ -65,11 +64,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } catch {
           if (!alive) return;
           clearTokens();
-          setStatus("guest");
-          return;
         }
       }
-      setStatus("authed");
+      setStatus("guest");
     })();
     return () => {
       alive = false;

@@ -31,7 +31,7 @@ function Stat({ value, label }: { value: number; label: string }) {
 }
 
 export default function ProfileScreen() {
-  const { data, isLoading, isError, refetch } = useMe();
+  const { data, isLoading, isError, error, refetch } = useMe();
   const { signOut } = useAuth();
   const nav = useNav();
   const [tab, setTab] = useState<ProfileTab>("map");
@@ -50,7 +50,7 @@ export default function ProfileScreen() {
       </View>
     );
   }
-  if (isError || !data) return <ErrorView onRetry={refetch} />;
+  if (isError || !data) return <ErrorView error={error} onRetry={refetch} />;
 
   const { user, stats } = data;
 

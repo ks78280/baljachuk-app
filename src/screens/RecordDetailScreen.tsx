@@ -121,7 +121,7 @@ export default function RecordDetailScreen({
   const kb = useKeyboardHeight();
   const scrollRef = useRef<ScrollView>(null);
   const nav = useNav();
-  const { data: record, isLoading, isError, refetch } = useRecordDetail(recordId);
+  const { data: record, isLoading, isError, error, refetch } = useRecordDetail(recordId);
   const { data: comments } = useComments(recordId);
   const { data: me } = useMe();
   const addComment = useAddComment(recordId);
@@ -196,7 +196,7 @@ export default function RecordDetailScreen({
       {isLoading ? (
         <RecordDetailSkeleton />
       ) : isError || !record ? (
-        <ErrorView onRetry={refetch} />
+        <ErrorView error={error} onRetry={refetch} />
       ) : (
         <>
           <ScrollView

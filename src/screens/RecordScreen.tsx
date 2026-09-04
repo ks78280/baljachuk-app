@@ -17,6 +17,7 @@ import { MAX_PHOTOS, takePhoto, pickFromLibrary } from "../lib/imagePicker";
 import { useKeyboardHeight } from "../lib/useKeyboard";
 import { todayISO, formatDot, recentDateOptions } from "../lib/date";
 import { createRecord } from "../api/records";
+import { uploadPhotos } from "../api/uploads";
 import { useSpots, useRecordDetail, useUpdateRecord } from "../hooks/queries";
 import { RecordType, Visibility } from "../types/models";
 
@@ -173,18 +174,19 @@ export default function RecordScreen({
     setSubmitting(true);
     setFormError(null);
     try {
-      // 사진은 지금 로컬 URI를 그대로 넘긴다. 실서버 전환 시:
-      // /uploads/presign → S3 PUT → 반환된 URL 목록으로 교체.
+      // 로컬 사진 URI → 서버 업로드(목이면 그대로) → 받은 URL로 기록 생성
+      const photoUrls = isWish ? [] : await uploadPhotos(photos);
       await createRecord({
         type,
         spotId,
         caption: caption.trim(),
-        photoUrls: photos,
+        photoUrls,
         visibility,
         visitedAt: isWish ? null : visitedAt,
       });
       queryClient.invalidateQueries({ queryKey: ["timeline"] });
       queryClient.invalidateQueries({ queryKey: ["map-records"] });
+      queryClient.invalidateQueries({ queryKey: ["my-records"] });
       onBack();
     } catch {
       setFormError("게시에 실패했습니다. 잠시 후 다시 시도해주세요");

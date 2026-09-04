@@ -84,7 +84,7 @@ function PersonRow({ item }: { item: SuggestedUser }) {
 }
 
 export default function ExploreScreen() {
-  const { data, isLoading, isError, refetch } = useExplore();
+  const { data, isLoading, isError, error, refetch } = useExplore();
   const [subTab, setSubTab] = useState<"spots" | "users">("spots");
   const trendingCardWidth = useTrendingCardWidth();
   const { openSpot, openSearch } = useNav();
@@ -108,7 +108,7 @@ export default function ExploreScreen() {
       {isLoading ? (
         <ExploreSkeleton />
       ) : isError || !data ? (
-        <ErrorView onRetry={refetch} />
+        <ErrorView error={error} onRetry={refetch} />
       ) : (
         <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 24 }}>
           <View className="flex-row gap-5 px-5 pb-4 border-b border-border">

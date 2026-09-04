@@ -16,7 +16,7 @@ export default function SpotDetailScreen({
   onOpenRecord: (recordId: string) => void;
 }) {
   const { data: spots } = useSpots();
-  const { data: records, isLoading, isError, refetch } = useSpotRecords(spotId);
+  const { data: records, isLoading, isError, error, refetch } = useSpotRecords(spotId);
   const spot = spots?.find((s) => s.id === spotId) ?? null;
 
   return (
@@ -55,7 +55,7 @@ export default function SpotDetailScreen({
             <RecordCardSkeleton />
           </View>
         ) : isError ? (
-          <ErrorView onRetry={refetch} />
+          <ErrorView error={error} onRetry={refetch} />
         ) : !records || records.length === 0 ? (
           <EmptyView message="아직 이곳의 기록이 없어요" />
         ) : (

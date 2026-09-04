@@ -95,7 +95,7 @@ export default function FeedManageScreen({
   onBack: () => void;
   onEditRecord: (id: string) => void;
 }) {
-  const { data, isLoading, isError, refetch } = useMyRecords();
+  const { data, isLoading, isError, error, refetch } = useMyRecords();
   const setNotify = useSetNotifySetting();
   const deleteRecord = useDeleteRecord();
 
@@ -123,7 +123,7 @@ export default function FeedManageScreen({
           <RecordCardSkeleton />
         </View>
       ) : isError ? (
-        <ErrorView onRetry={refetch} />
+        <ErrorView error={error} onRetry={refetch} />
       ) : (data?.length ?? 0) === 0 ? (
         <EmptyView message="올린 기록이 아직 없어요" />
       ) : (

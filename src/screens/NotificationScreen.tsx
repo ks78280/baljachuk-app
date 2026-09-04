@@ -65,7 +65,7 @@ export default function NotificationScreen({
   onBack: () => void;
   onOpenRecord: (recordId: string) => void;
 }) {
-  const { data, isLoading, isError, refetch } = useNotifications();
+  const { data, isLoading, isError, error, refetch } = useNotifications();
   const markRead = useMarkNotificationRead();
   const markAll = useMarkAllNotificationsRead();
 
@@ -95,7 +95,7 @@ export default function NotificationScreen({
       {isLoading ? (
         <SearchRowsSkeleton count={6} />
       ) : isError ? (
-        <ErrorView onRetry={refetch} />
+        <ErrorView error={error} onRetry={refetch} />
       ) : !data || data.length === 0 ? (
         <EmptyView message="아직 알림이 없어요" />
       ) : (

@@ -14,8 +14,8 @@ import {
 export const USE_MOCK =
   (process.env.EXPO_PUBLIC_USE_MOCK ?? "true").toLowerCase() !== "false";
 
-const BASE_URL =
-  process.env.EXPO_PUBLIC_API_BASE_URL ?? "http://localhost:3000/api";
+export const BASE_URL =
+  process.env.EXPO_PUBLIC_API_BASE_URL ?? "http://localhost:4000/api";
 
 type Query = Record<string, string | number | boolean | null | undefined>;
 
