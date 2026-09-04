@@ -1,7 +1,13 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
-  content: ["./App.tsx", "./src/**/*.{js,jsx,ts,tsx}"],
+  content: [
+    "./app/**/*.{js,jsx,ts,tsx}",
+    "./src/**/*.{js,jsx,ts,tsx}",
+  ],
   presets: [require("nativewind/preset")],
+  // 앱은 라이트 고정(app.json userInterfaceStyle: light). 'class'로 두면
+  // react-navigation이 스킴을 설정할 때 NativeWind가 던지는 에러를 피한다.
+  darkMode: "class",
   theme: {
     extend: {
       colors: {
