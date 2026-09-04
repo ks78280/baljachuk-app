@@ -28,11 +28,11 @@ function useTrendingCardWidth(): number {
   return Math.round(usable / CAROUSEL_VISIBLE_CARDS);
 }
 
-function Tag({ label }: { label: string }) {
+function Tag({ label, onPress }: { label: string; onPress?: () => void }) {
   return (
-    <View className="px-3.5 py-2 bg-coral-soft rounded-full">
+    <Pressable onPress={onPress} className="px-3.5 py-2 bg-coral-soft rounded-full">
       <Text className="text-[13px] font-semibold text-coral-dark">{label}</Text>
-    </View>
+    </Pressable>
   );
 }
 
@@ -163,7 +163,7 @@ export default function ExploreScreen() {
             <Text className="text-[15px] font-bold text-ink mb-2.5">인기 태그</Text>
             <View className="flex-row flex-wrap gap-2">
               {data.popularTags.map((tag) => (
-                <Tag key={tag} label={tag} />
+                <Tag key={tag} label={tag} onPress={openSearch} />
               ))}
             </View>
           </View>

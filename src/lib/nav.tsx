@@ -13,6 +13,7 @@ export function useNav() {
     openSpot: (id: string) => router.push(`/spot/${id}`),
     openSearch: () => router.push("/search"),
     openNotifications: () => router.push("/notifications"),
+    openProfile: () => router.navigate("/profile"),
     openSettings: () => router.push("/settings"),
     openProfileEdit: () => router.push("/profile/edit"),
     openFeedManage: () => router.push("/feed-manage"),

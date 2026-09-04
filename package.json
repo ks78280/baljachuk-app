@@ -28,6 +28,7 @@
     "tailwindcss": "^3.4.19"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.1",
     "@types/react": "~19.2.2",
     "babel-preset-expo": "^57.0.10",
     "typescript": "~6.0.3"
@@ -36,7 +37,11 @@
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "export:web": "expo export -p web",
+    "typecheck": "tsc --noEmit",
+    "e2e": "playwright test",
+    "e2e:install": "playwright install chromium"
   },
   "private": true
 }

@@ -28,7 +28,7 @@ export default function MapScreen() {
   const [scope, setScope] = useState<MapScope>("all");
   const [region, setRegion] = useState<MapRegion>({ ...INITIAL_BBOX, zoom: INITIAL.zoom });
   const [myLoc, setMyLoc] = useState<{ lat: number; lng: number } | null>(null);
-  const { openSpot, openSearch, openNotifications } = useNav();
+  const { openSpot, openSearch, openNotifications, openProfile } = useNav();
   const unread = useUnreadNotificationCount();
   const unlock = useUnlockSpots();
   const unlockedOnce = useRef(false);
@@ -88,7 +88,9 @@ export default function MapScreen() {
               <View className="absolute -top-0.5 -right-0.5 w-[7px] h-[7px] rounded-full bg-coral border border-bg" />
             )}
           </Pressable>
-          <View className="w-[30px] h-[30px] rounded-full bg-coral" />
+          <Pressable onPress={openProfile} hitSlop={8}>
+            <View className="w-[30px] h-[30px] rounded-full bg-coral" />
+          </Pressable>
         </View>
       </View>
 
