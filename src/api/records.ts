@@ -1,0 +1,69 @@
+import { apiFetch, USE_MOCK, mockDelay } from "./client";
+import { CursorPage, TimelineTab } from "../types/api";
+import { RecordCard, RecordType, Visibility } from "../types/models";
+import * as mock from "../mocks/db";
+
+export async function getTimeline(
+  tab: TimelineTab,
+  cursor?: string
+): Promise<CursorPage<RecordCard>> {
+  if (USE_MOCK) {
+    const src = tab === "mine" ? mock.timelineMine : mock.timelineFriends;
+    return mockDelay({ items: [...src], nextCursor: null });
+  }
+  return apiFetch("/records/timeline", { query: { tab, cursor } });
+}
+
+export async function getRecordDetail(id: string): Promise<RecordCard> {
+  if (USE_MOCK) {
+    const found = mock.findRecord(id);
+    if (!found) throw new Error("기록을 찾을 수 없습니다");
+    // 캐시가 목 객체를 직접 참조하지 않도록 복사본 반환
+    return mockDelay({ ...found, photos: [...found.photos] });
+  }
+  return apiFetch(`/records/${id}`);
+}
+
+export async function getMyRecords(): Promise<RecordCard[]> {
+  if (USE_MOCK) return mockDelay([...mock.timelineMine]);
+  return apiFetch("/users/me/records");
+}
+
+export interface CreateRecordInput {
+  type: RecordType;
+  spotId: string;
+  caption: string;
+  photoUrls: string[];
+  visibility: Visibility;
+  visitedAt: string | null;
+}
+
+export async function createRecord(input: CreateRecordInput): Promise<RecordCard> {
+  if (USE_MOCK) {
+    const draft: RecordCard = {
+      id: `r-${Date.now()}`,
+      type: input.type,
+      author: mock.me,
+      spot: mock.spots.find((s) => s.id === input.spotId) ?? mock.spots[0],
+      caption: input.caption,
+      photos: input.photoUrls.map((url, i) => ({
+        id: `p-${Date.now()}-${i}`,
+        originalUrl: url,
+        thumbnailUrl: url,
+        width: 0,
+        height: 0,
+        orderIndex: i,
+      })),
+      visibility: input.visibility,
+      visitedAt: input.visitedAt,
+      likeCount: 0,
+      commentCount: 0,
+      likedByMe: false,
+      locked: false,
+      createdAt: new Date().toISOString(),
+    };
+    mock.prependRecord(draft);
+    return mockDelay(draft);
+  }
+  return apiFetch("/records", { method: "POST", body: input });
+}
