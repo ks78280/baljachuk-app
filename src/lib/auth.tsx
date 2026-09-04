@@ -10,11 +10,13 @@ import { useQueryClient } from "@tanstack/react-query";
 import { User } from "../types/models";
 import {
   clearTokens,
+  getRefreshToken,
   loadTokens,
   setTokens,
 } from "../api/authToken";
 import {
   login as apiLogin,
+  logout as apiLogout,
   signup as apiSignup,
   refreshTokens as apiRefresh,
   SignupInput,
@@ -114,6 +116,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signOut = useCallback(() => {
+    // 서버측 refresh token 무효화는 best-effort — 실패해도 로컬 로그아웃은 그대로 진행.
+    const rt = getRefreshToken();
+    if (rt) apiLogout(rt).catch(() => {});
     clearTokens();
     setUser(null);
     setStatus("guest");

@@ -1,5 +1,5 @@
 import { apiFetch, USE_MOCK, mockDelay } from "./client";
-import { User, UserStats, Visibility } from "../types/models";
+import { User, UserSearchResult, UserStats, Visibility } from "../types/models";
 import * as mock from "../mocks/db";
 
 export interface Profile {
@@ -56,12 +56,14 @@ export async function setPushToken(token: string | null): Promise<void> {
   await apiFetch("/users/me/push-token", { method: "PATCH", body: { token } });
 }
 
-export async function searchUsers(q: string): Promise<User[]> {
+export async function searchUsers(q: string): Promise<UserSearchResult[]> {
   const term = q.trim().toLowerCase();
   if (USE_MOCK) {
     if (!term) return mockDelay([]);
     return mockDelay(
-      mock.allUsers.filter((u) => u.nickname.toLowerCase().includes(term)),
+      mock.allUsers
+        .filter((u) => u.nickname.toLowerCase().includes(term))
+        .map((u) => ({ ...u, followedByMe: false })),
       250
     );
   }

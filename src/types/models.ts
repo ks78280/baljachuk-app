@@ -18,6 +18,11 @@ export interface User {
   defaultVisibility?: Visibility;
 }
 
+/** GET /users/search 결과 — 검색 시점의 팔로우 상태를 함께 내려줌 (F3) */
+export interface UserSearchResult extends User {
+  followedByMe: boolean;
+}
+
 /** /users/:id/stats */
 export interface UserStats {
   visitedSpotCount: number;

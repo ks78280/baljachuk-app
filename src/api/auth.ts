@@ -53,3 +53,15 @@ export async function refreshTokens(refreshToken: string): Promise<AuthResult> {
     body: { refreshToken },
   });
 }
+
+/**
+ * 서버측 세션 무효화 — 이 refresh token 의 DB 행을 지워 탈취 후 재사용을 막는다.
+ * 로컬 토큰 삭제 전에 best-effort 로 호출 (실패해도 로그아웃 자체는 진행).
+ */
+export async function logout(refreshToken: string): Promise<void> {
+  if (USE_MOCK) return;
+  await apiFetch("/auth/logout", {
+    method: "POST",
+    body: { refreshToken },
+  });
+}

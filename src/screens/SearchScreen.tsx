@@ -8,11 +8,17 @@ import { useDebounced } from "../lib/useDebounced";
 import { useUserSearch, useSpotSearch, useOpenConversation } from "../hooks/queries";
 import { useNav } from "../lib/nav";
 import { ApiRequestError } from "../types/api";
-import { User, Spot } from "../types/models";
+import { UserSearchResult, Spot } from "../types/models";
 
 type Tab = "users" | "spots";
 
-function UserRow({ user, onMessage }: { user: User; onMessage: (u: User) => void }) {
+function UserRow({
+  user,
+  onMessage,
+}: {
+  user: UserSearchResult;
+  onMessage: (u: UserSearchResult) => void;
+}) {
   return (
     <View className="flex-row items-center gap-2.5 px-5 py-2.5">
       {user.profileImageUrl ? (
@@ -31,7 +37,7 @@ function UserRow({ user, onMessage }: { user: User; onMessage: (u: User) => void
       <Pressable onPress={() => onMessage(user)} hitSlop={8} className="p-1.5">
         <CommentIcon color="#8C6F63" size={18} />
       </Pressable>
-      <FollowButton userId={user.id} />
+      <FollowButton userId={user.id} initialFollowing={user.followedByMe} />
     </View>
   );
 }
@@ -69,7 +75,7 @@ export default function SearchScreen({
   const nav = useNav();
   const openConvo = useOpenConversation();
 
-  function messageUser(u: User) {
+  function messageUser(u: UserSearchResult) {
     if (openConvo.isPending) return;
     openConvo.mutate(u.id, {
       onSuccess: (conv) => nav.openChat(conv.id, conv.other.nickname),
