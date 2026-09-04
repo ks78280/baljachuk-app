@@ -40,7 +40,7 @@
     "web": "expo start --web",
     "export:web": "expo export -p web",
     "typecheck": "tsc --noEmit",
-    "build:android": "eas build --platform android --profile preview",
+    "build:android": "npx eas-cli build --platform android --profile preview",
     "e2e": "playwright test",
     "e2e:install": "playwright install chromium"
   },
