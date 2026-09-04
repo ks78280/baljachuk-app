@@ -9,6 +9,8 @@ import {
   useWindowDimensions,
   NativeSyntheticEvent,
   NativeScrollEvent,
+  Alert,
+  Platform,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BackIcon, CommentIcon, LockIcon, SmallPinIcon } from "../components/icons";
@@ -16,9 +18,18 @@ import { ErrorView } from "../components/states";
 import { RecordDetailSkeleton } from "../components/skeletons";
 import LikeButton from "../components/LikeButton";
 import { useKeyboardHeight } from "../lib/useKeyboard";
+import { useNav } from "../lib/nav";
 import { formatRelative } from "../lib/time";
 import { RecordCard, Comment } from "../types/models";
-import { useRecordDetail, useComments, useAddComment } from "../hooks/queries";
+import {
+  useRecordDetail,
+  useComments,
+  useAddComment,
+  useMe,
+  useDeleteRecord,
+  useCompleteWish,
+  useDeleteComment,
+} from "../hooks/queries";
 
 function Avatar({ uri, size = 32 }: { uri: string | null; size?: number }) {
   return uri ? (
@@ -70,7 +81,13 @@ function PhotoCarousel({ record }: { record: RecordCard }) {
   );
 }
 
-function CommentRow({ comment }: { comment: Comment }) {
+function CommentRow({
+  comment,
+  onDelete,
+}: {
+  comment: Comment;
+  onDelete?: () => void;
+}) {
   return (
     <View className="flex-row gap-2.5 py-2.5">
       <Avatar uri={comment.author.profileImageUrl} size={28} />
@@ -78,6 +95,11 @@ function CommentRow({ comment }: { comment: Comment }) {
         <View className="flex-row items-center gap-1.5">
           <Text className="text-[13px] font-bold text-ink">{comment.author.nickname}</Text>
           <Text className="text-[11px] text-ink-muted">{formatRelative(comment.createdAt)}</Text>
+          {onDelete && (
+            <Pressable onPress={onDelete} hitSlop={8} className="ml-auto">
+              <Text className="text-[11px] text-ink-muted">삭제</Text>
+            </Pressable>
+          )}
         </View>
         <Text className="text-[13px] text-ink leading-5 mt-0.5">{comment.content}</Text>
       </View>
@@ -98,10 +120,37 @@ export default function RecordDetailScreen({
   // Android는 삼성 키보드 툴바를 감안한 기본 여유가 훅 안에 들어있음. 안 맞으면 숫자 지정.
   const kb = useKeyboardHeight();
   const scrollRef = useRef<ScrollView>(null);
+  const nav = useNav();
   const { data: record, isLoading, isError, refetch } = useRecordDetail(recordId);
   const { data: comments } = useComments(recordId);
+  const { data: me } = useMe();
   const addComment = useAddComment(recordId);
+  const deleteRecord = useDeleteRecord();
+  const completeWish = useCompleteWish(recordId);
+  const deleteComment = useDeleteComment(recordId);
   const [draft, setDraft] = useState("");
+
+  const myId = me?.user.id;
+  const isOwner = !!record && !!myId && record.author.id === myId;
+
+  function confirmDeleteRecord() {
+    const run = () =>
+      deleteRecord.mutate(recordId, { onSuccess: onBack });
+    if (Platform.OS === "web") return run();
+    Alert.alert("기록 삭제", "이 기록을 삭제할까요? 되돌릴 수 없어요.", [
+      { text: "취소", style: "cancel" },
+      { text: "삭제", style: "destructive", onPress: run },
+    ]);
+  }
+
+  function confirmDeleteComment(commentId: string) {
+    const run = () => deleteComment.mutate(commentId);
+    if (Platform.OS === "web") return run();
+    Alert.alert("댓글 삭제", "이 댓글을 삭제할까요?", [
+      { text: "취소", style: "cancel" },
+      { text: "삭제", style: "destructive", onPress: run },
+    ]);
+  }
 
   // 키보드가 올라오면 댓글이 우선 보이도록 목록을 맨 아래로 스크롤
   useEffect(() => {
@@ -132,6 +181,16 @@ export default function RecordDetailScreen({
           <BackIcon />
         </Pressable>
         <Text className="text-base font-bold text-ink">기록</Text>
+        {isOwner && (
+          <View className="flex-row gap-3.5 ml-auto">
+            <Pressable onPress={() => nav.openEditRecord(recordId)} hitSlop={8}>
+              <Text className="text-[13px] font-semibold text-coral">수정</Text>
+            </Pressable>
+            <Pressable onPress={confirmDeleteRecord} hitSlop={8}>
+              <Text className="text-[13px] font-semibold text-coral-dark">삭제</Text>
+            </Pressable>
+          </View>
+        )}
       </View>
 
       {isLoading ? (
@@ -178,6 +237,26 @@ export default function RecordDetailScreen({
                   <Text className="px-5 py-3 text-sm text-ink leading-6">{record.caption}</Text>
                 )}
 
+                {/* 위시: 방문 완료 처리 */}
+                {record.type === "WISH" && isOwner && (
+                  <View className="px-5 pb-2">
+                    {record.isCompleted ? (
+                      <View className="self-start flex-row items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#E8F3EE]">
+                        <Text className="text-[12px] font-bold text-[#3FAE8A]">다녀온 곳으로 표시됨</Text>
+                      </View>
+                    ) : (
+                      <Pressable
+                        onPress={() => completeWish.mutate()}
+                        disabled={completeWish.isPending}
+                        className="self-start px-4 py-2 rounded-full bg-coral"
+                        style={completeWish.isPending ? { opacity: 0.5 } : undefined}
+                      >
+                        <Text className="text-[13px] font-bold text-white">다녀왔어요</Text>
+                      </Pressable>
+                    )}
+                  </View>
+                )}
+
                 {/* 좋아요 / 댓글 카운트 */}
                 <View className="flex-row items-center gap-5 px-5 py-2 border-b border-border">
                   <LikeButton
@@ -195,7 +274,17 @@ export default function RecordDetailScreen({
                 {/* 댓글 목록 */}
                 <View className="px-5 pt-2 pb-4">
                   {comments && comments.length > 0 ? (
-                    comments.map((c) => <CommentRow key={c.id} comment={c} />)
+                    comments.map((c) => (
+                      <CommentRow
+                        key={c.id}
+                        comment={c}
+                        onDelete={
+                          myId && (c.author.id === myId || isOwner)
+                            ? () => confirmDeleteComment(c.id)
+                            : undefined
+                        }
+                      />
+                    ))
                   ) : (
                     <Text className="text-[13px] text-ink-muted py-6 text-center">
                       첫 댓글을 남겨보세요

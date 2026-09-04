@@ -14,6 +14,8 @@ export interface User {
   nickname: string;
   profileImageUrl: string | null;
   bio: string | null;
+  /** GET /users/me 에서만 채워짐 (본인). 설정의 "기본 공개 범위" */
+  defaultVisibility?: Visibility;
 }
 
 /** /users/:id/stats */
@@ -52,6 +54,10 @@ export interface RecordCard {
   photos: Photo[];
   visibility: Visibility;
   visitedAt: string | null; // WISH는 null
+  /** WISH 전용 — 방문 후 완료 처리 여부 (설계서 9.2) */
+  isCompleted?: boolean;
+  /** VISITED 전용 — 기록별 인근 친구 알림 on/off (피드 관리에서 토글) */
+  nearbyNotifyEnabled?: boolean;
   likeCount: number;
   commentCount: number;
   likedByMe: boolean;

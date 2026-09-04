@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { View, Text, ScrollView, Image, Pressable, Alert, Platform } from "react-native";
 import { useMe } from "../hooks/queries";
 import { useAuth } from "../lib/auth";
+import { useNav } from "../lib/nav";
 import { CommentIcon, GearIcon, StarIcon } from "../components/icons";
 import { ErrorView } from "../components/states";
 import { ProfileSkeleton } from "../components/skeletons";
@@ -32,6 +33,7 @@ function Stat({ value, label }: { value: number; label: string }) {
 export default function ProfileScreen() {
   const { data, isLoading, isError, refetch } = useMe();
   const { signOut } = useAuth();
+  const nav = useNav();
   const [tab, setTab] = useState<ProfileTab>("map");
 
   if (isLoading) {
@@ -62,9 +64,11 @@ export default function ProfileScreen() {
     <View className="flex-1 bg-bg">
       <View className="flex-row items-center justify-between px-5 pt-2">
         <Text className="text-lg font-black text-ink">프로필</Text>
-        <View className="flex-row gap-3.5">
+        <View className="flex-row items-center gap-3.5">
           <CommentIcon color="#2B1710" size={21} />
-          <GearIcon />
+          <Pressable onPress={nav.openSettings} hitSlop={8}>
+            <GearIcon />
+          </Pressable>
         </View>
       </View>
 
@@ -89,9 +93,20 @@ export default function ProfileScreen() {
             <Stat value={stats.followingCount} label="팔로잉" />
           </View>
 
-          <Pressable className="w-full items-center py-2.5 border border-border rounded-xl">
-            <Text className="text-[13px] font-bold text-ink">프로필 편집</Text>
-          </Pressable>
+          <View className="w-full flex-row gap-2">
+            <Pressable
+              onPress={nav.openProfileEdit}
+              className="flex-1 items-center py-2.5 border border-border rounded-xl"
+            >
+              <Text className="text-[13px] font-bold text-ink">프로필 편집</Text>
+            </Pressable>
+            <Pressable
+              onPress={nav.openFeedManage}
+              className="flex-1 items-center py-2.5 border border-border rounded-xl"
+            >
+              <Text className="text-[13px] font-bold text-ink">피드 관리</Text>
+            </Pressable>
+          </View>
 
           <Pressable
             onPress={() => confirmSignOut(signOut)}

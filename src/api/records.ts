@@ -38,6 +38,59 @@ export interface CreateRecordInput {
   visitedAt: string | null;
 }
 
+export interface UpdateRecordInput {
+  caption?: string;
+  visibility?: Visibility;
+}
+
+/** 캡션 / 공개범위 수정 (작성자만). */
+export async function updateRecord(
+  id: string,
+  patch: UpdateRecordInput
+): Promise<RecordCard> {
+  if (USE_MOCK) {
+    const updated = mock.updateRecordFields(id, patch);
+    if (!updated) throw new Error("기록을 찾을 수 없습니다");
+    return mockDelay(updated, 200);
+  }
+  return apiFetch(`/records/${id}`, { method: "PATCH", body: patch });
+}
+
+/** 기록 삭제 (작성자만). */
+export async function deleteRecord(id: string): Promise<void> {
+  if (USE_MOCK) {
+    mock.removeRecord(id);
+    return mockDelay(undefined, 200);
+  }
+  await apiFetch(`/records/${id}`, { method: "DELETE" });
+}
+
+/** 위시 → 방문 완료 처리. */
+export async function completeWish(id: string): Promise<RecordCard> {
+  if (USE_MOCK) {
+    const updated = mock.updateRecordFields(id, { isCompleted: true });
+    if (!updated) throw new Error("기록을 찾을 수 없습니다");
+    return mockDelay(updated, 200);
+  }
+  return apiFetch(`/records/${id}/complete`, { method: "PATCH" });
+}
+
+/** 피드 관리 — 기록별 인근 친구 알림 on/off (VISITED). */
+export async function setNotifySetting(
+  id: string,
+  enabled: boolean
+): Promise<RecordCard> {
+  if (USE_MOCK) {
+    const updated = mock.updateRecordFields(id, { nearbyNotifyEnabled: enabled });
+    if (!updated) throw new Error("기록을 찾을 수 없습니다");
+    return mockDelay(updated, 150);
+  }
+  return apiFetch(`/records/${id}/notify-setting`, {
+    method: "PATCH",
+    body: { enabled },
+  });
+}
+
 export async function createRecord(input: CreateRecordInput): Promise<RecordCard> {
   if (USE_MOCK) {
     const draft: RecordCard = {

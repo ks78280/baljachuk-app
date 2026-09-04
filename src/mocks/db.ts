@@ -9,6 +9,7 @@ import {
   SuggestedUser,
   AppNotification,
   UserStats,
+  Visibility,
 } from "../types/models";
 
 const img = (seed: string, w = 800, h = 600) =>
@@ -19,6 +20,7 @@ export const me: User = {
   nickname: "강산",
   profileImageUrl: img("kangsan", 200, 200),
   bio: "여행과 기록을 좋아합니다. 지도를 하나씩 채워가는 중.",
+  defaultVisibility: "FRIENDS",
 };
 
 export const meStats: UserStats = {
@@ -83,6 +85,7 @@ export const timelineMine: RecordCard[] = [
     photos: [{ id: "p-1", originalUrl: img("dgt1"), thumbnailUrl: img("dgt1", 400, 300), width: 800, height: 600, orderIndex: 0 }],
     visibility: "FRIENDS",
     visitedAt: "2026-09-01",
+    nearbyNotifyEnabled: true,
     likeCount: 12,
     commentCount: 3,
     likedByMe: false,
@@ -98,6 +101,7 @@ export const timelineMine: RecordCard[] = [
     photos: [],
     visibility: "FRIENDS",
     visitedAt: null,
+    isCompleted: false,
     likeCount: 2,
     commentCount: 0,
     likedByMe: false,
@@ -216,4 +220,48 @@ export function markAllNotificationsRead(): void {
   notifications.forEach((n) => {
     n.isRead = true;
   });
+}
+
+// ── Phase 3.5: 콘텐츠 관리 ────────────────────────────────────────────
+export function updateMe(patch: Partial<User>): User {
+  Object.assign(me, patch);
+  return { ...me };
+}
+
+export interface RecordFieldPatch {
+  caption?: string;
+  visibility?: Visibility;
+  isCompleted?: boolean;
+  nearbyNotifyEnabled?: boolean;
+}
+
+export function updateRecordFields(id: string, patch: RecordFieldPatch): RecordCard | undefined {
+  const r = findRecord(id);
+  if (!r) return undefined;
+  Object.assign(r, patch);
+  return { ...r, photos: [...r.photos] };
+}
+
+export function removeRecord(id: string): void {
+  for (const list of [timelineMine, timelineFriends]) {
+    const i = list.findIndex((r) => r.id === id);
+    if (i >= 0) {
+      const [gone] = list.splice(i, 1);
+      const s = spots.find((x) => x.id === gone.spot.id);
+      if (s && s.recordCount > 0) s.recordCount -= 1;
+      break;
+    }
+  }
+  delete commentsByRecord[id];
+}
+
+export function removeComment(recordId: string, commentId: string): void {
+  const list = commentsByRecord[recordId];
+  if (!list) return;
+  const i = list.findIndex((c) => c.id === commentId);
+  if (i >= 0) {
+    list.splice(i, 1);
+    const r = findRecord(recordId);
+    if (r && r.commentCount > 0) r.commentCount -= 1;
+  }
 }

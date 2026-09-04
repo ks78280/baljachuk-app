@@ -1,5 +1,5 @@
 import { apiFetch, USE_MOCK, mockDelay } from "./client";
-import { User, UserStats } from "../types/models";
+import { User, UserStats, Visibility } from "../types/models";
 import * as mock from "../mocks/db";
 
 export interface Profile {
@@ -29,6 +29,25 @@ export async function getUserProfile(id: string): Promise<Profile> {
     apiFetch<UserStats>(`/users/${id}/stats`),
   ]);
   return { user, stats, isMe: false, followedByMe: false };
+}
+
+export interface UpdateMeInput {
+  nickname?: string;
+  bio?: string;
+  profileImageUrl?: string;
+  defaultVisibility?: Visibility;
+}
+
+/** 프로필/설정 수정. 넘긴 필드만 갱신. */
+export async function updateMe(patch: UpdateMeInput): Promise<User> {
+  if (USE_MOCK) return mockDelay(mock.updateMe(patch as Partial<User>), 250);
+  return apiFetch("/users/me", { method: "PATCH", body: patch });
+}
+
+/** 회원 탈퇴 (설계서 §11.3). 성공 후 호출부에서 signOut. */
+export async function deleteMe(): Promise<void> {
+  if (USE_MOCK) return mockDelay(undefined, 300);
+  await apiFetch("/users/me", { method: "DELETE" });
 }
 
 export async function searchUsers(q: string): Promise<User[]> {

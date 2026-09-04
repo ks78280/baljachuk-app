@@ -59,9 +59,13 @@ export default function RootLayout() {
                 <Stack.Screen name="(auth)" />
                 <Stack.Screen name="record/new" />
                 <Stack.Screen name="record/[id]" />
+                <Stack.Screen name="record/[id]/edit" />
                 <Stack.Screen name="spot/[id]" />
                 <Stack.Screen name="search" />
                 <Stack.Screen name="notifications" />
+                <Stack.Screen name="settings" />
+                <Stack.Screen name="profile/edit" />
+                <Stack.Screen name="feed-manage" />
               </Stack>
             </AuthGate>
           </SafeAreaView>

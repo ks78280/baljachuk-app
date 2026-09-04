@@ -5,10 +5,19 @@ import {
   QueryClient,
 } from "@tanstack/react-query";
 import { BBox, CursorPage, MapScope, TimelineTab } from "../types/api";
-import { getTimeline, getRecordDetail } from "../api/records";
+import {
+  getTimeline,
+  getRecordDetail,
+  getMyRecords,
+  updateRecord,
+  deleteRecord,
+  completeWish,
+  setNotifySetting,
+  UpdateRecordInput,
+} from "../api/records";
 import { getMapRecords, getSpotRecords } from "../api/map";
 import { getExplore } from "../api/explore";
-import { getMe } from "../api/users";
+import { getMe, updateMe, deleteMe, UpdateMeInput } from "../api/users";
 import { getSpots, searchSpots } from "../api/spots";
 import { searchUsers } from "../api/users";
 import {
@@ -21,10 +30,12 @@ import {
   unlikeRecord,
   getComments,
   addComment,
+  deleteComment,
   follow,
   unfollow,
 } from "../api/social";
-import { RecordCard, Comment, AppNotification } from "../types/models";
+import { RecordCard, Comment, AppNotification, User } from "../types/models";
+import { Profile } from "../api/users";
 
 /** 화면은 이 훅들만 쓴다. mock↔실서버 전환은 api 모듈 안에서만 일어난다. */
 
@@ -34,6 +45,7 @@ export const qk = {
   explore: () => ["explore"] as const,
   me: () => ["me"] as const,
   recordDetail: (id: string) => ["record", id] as const,
+  myRecords: () => ["my-records"] as const,
   spots: () => ["spots"] as const,
   spotRecords: (id: string) => ["spot-records", id] as const,
   comments: (recordId: string) => ["comments", recordId] as const,
@@ -57,6 +69,23 @@ function patchRecordEverywhere(
   );
   qc.setQueriesData<RecordCard[]>({ queryKey: ["spot-records"] }, (list) =>
     list ? list.map((r) => (r.id === recordId ? patch(r) : r)) : list
+  );
+  qc.setQueryData<RecordCard[]>(qk.myRecords(), (list) =>
+    list ? list.map((r) => (r.id === recordId ? patch(r) : r)) : list
+  );
+}
+
+/** 기록을 담고 있는 모든 목록 캐시에서 제거 */
+function removeRecordEverywhere(qc: QueryClient, recordId: string) {
+  qc.removeQueries({ queryKey: qk.recordDetail(recordId) });
+  qc.setQueriesData<CursorPage<RecordCard>>({ queryKey: ["timeline"] }, (page) =>
+    page ? { ...page, items: page.items.filter((r) => r.id !== recordId) } : page
+  );
+  qc.setQueriesData<RecordCard[]>({ queryKey: ["spot-records"] }, (list) =>
+    list ? list.filter((r) => r.id !== recordId) : list
+  );
+  qc.setQueryData<RecordCard[]>(qk.myRecords(), (list) =>
+    list ? list.filter((r) => r.id !== recordId) : list
   );
 }
 
@@ -95,6 +124,116 @@ export function useRecordDetail(id: string) {
 
 export function useSpots() {
   return useQuery({ queryKey: qk.spots(), queryFn: getSpots });
+}
+
+// ── Phase 3.5: 콘텐츠 관리 & 설정 ────────────────────────────────────
+
+/** 피드 관리 화면용 — 내가 올린 기록 목록 */
+export function useMyRecords() {
+  return useQuery({ queryKey: qk.myRecords(), queryFn: getMyRecords });
+}
+
+/** 프로필/설정 수정 → me 캐시 갱신 */
+export function useUpdateMe() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (patch: UpdateMeInput) => updateMe(patch),
+    onSuccess: (user: User) => {
+      qc.setQueryData<Profile>(qk.me(), (prev) =>
+        prev ? { ...prev, user } : prev
+      );
+    },
+  });
+}
+
+/** 회원 탈퇴 — 성공 시 호출부에서 signOut() */
+export function useDeleteMe() {
+  return useMutation({ mutationFn: () => deleteMe() });
+}
+
+/** 캡션/공개범위 수정 → 모든 기록 캐시 패치 */
+export function useUpdateRecord(recordId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (patch: UpdateRecordInput) => updateRecord(recordId, patch),
+    onSuccess: (updated: RecordCard) => {
+      patchRecordEverywhere(qc, recordId, (r) => ({
+        ...r,
+        caption: updated.caption,
+        visibility: updated.visibility,
+      }));
+    },
+  });
+}
+
+/** 기록 삭제 → 모든 목록에서 즉시 제거 */
+export function useDeleteRecord() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (recordId: string) => deleteRecord(recordId),
+    onMutate: async (recordId) => {
+      removeRecordEverywhere(qc, recordId);
+    },
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: ["timeline"] });
+      qc.invalidateQueries({ queryKey: ["map-records"] });
+      qc.invalidateQueries({ queryKey: qk.spots() });
+    },
+  });
+}
+
+/** 위시 → 방문 완료 처리 */
+export function useCompleteWish(recordId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => completeWish(recordId),
+    onSuccess: () => {
+      patchRecordEverywhere(qc, recordId, (r) => ({ ...r, isCompleted: true }));
+    },
+  });
+}
+
+/** 피드 관리 — 기록별 인근 친구 알림 토글 (낙관적) */
+export function useSetNotifySetting() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, enabled }: { id: string; enabled: boolean }) =>
+      setNotifySetting(id, enabled),
+    onMutate: async ({ id, enabled }) => {
+      patchRecordEverywhere(qc, id, (r) => ({ ...r, nearbyNotifyEnabled: enabled }));
+      return { id, enabled };
+    },
+    onError: (_e, { id, enabled }) => {
+      patchRecordEverywhere(qc, id, (r) => ({ ...r, nearbyNotifyEnabled: !enabled }));
+    },
+  });
+}
+
+/** 댓글 삭제 (낙관적) — comments 캐시에서 제거 + commentCount -1 */
+export function useDeleteComment(recordId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (commentId: string) => deleteComment(recordId, commentId),
+    onMutate: async (commentId) => {
+      await qc.cancelQueries({ queryKey: qk.comments(recordId) });
+      const prev = qc.getQueryData<Comment[]>(qk.comments(recordId));
+      qc.setQueryData<Comment[]>(qk.comments(recordId), (list) =>
+        (list ?? []).filter((c) => c.id !== commentId)
+      );
+      patchRecordEverywhere(qc, recordId, (r) => ({
+        ...r,
+        commentCount: Math.max(0, r.commentCount - 1),
+      }));
+      return { prev };
+    },
+    onError: (_e, _v, ctx) => {
+      if (ctx?.prev) qc.setQueryData(qk.comments(recordId), ctx.prev);
+      patchRecordEverywhere(qc, recordId, (r) => ({
+        ...r,
+        commentCount: r.commentCount + 1,
+      }));
+    },
+  });
 }
 
 export function useUserSearch(q: string) {

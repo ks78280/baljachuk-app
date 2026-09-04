@@ -9,9 +9,13 @@ export function useNav() {
   return {
     openCompose: () => router.push("/record/new"),
     openRecord: (id: string) => router.push(`/record/${id}`),
+    openEditRecord: (id: string) => router.push(`/record/${id}/edit`),
     openSpot: (id: string) => router.push(`/spot/${id}`),
     openSearch: () => router.push("/search"),
     openNotifications: () => router.push("/notifications"),
+    openSettings: () => router.push("/settings"),
+    openProfileEdit: () => router.push("/profile/edit"),
+    openFeedManage: () => router.push("/feed-manage"),
     close: () => router.back(),
   };
 }

@@ -17,7 +17,7 @@ import { MAX_PHOTOS, takePhoto, pickFromLibrary } from "../lib/imagePicker";
 import { useKeyboardHeight } from "../lib/useKeyboard";
 import { todayISO, formatDot, recentDateOptions } from "../lib/date";
 import { createRecord } from "../api/records";
-import { useSpots, qk } from "../hooks/queries";
+import { useSpots, useRecordDetail, useUpdateRecord } from "../hooks/queries";
 import { RecordType, Visibility } from "../types/models";
 
 const VIS_LABEL: Record<Visibility, string> = {
@@ -28,11 +28,21 @@ const VIS_LABEL: Record<Visibility, string> = {
 
 type SheetKind = "spot" | "visibility" | "date";
 
-export default function RecordScreen({ onBack }: { onBack: () => void }) {
+export default function RecordScreen({
+  onBack,
+  editRecordId,
+}: {
+  onBack: () => void;
+  editRecordId?: string;
+}) {
   const insets = useSafeAreaInsets();
   const kb = useKeyboardHeight();
   const queryClient = useQueryClient();
   const { data: spots } = useSpots();
+
+  const editing = !!editRecordId;
+  const { data: editRecord } = useRecordDetail(editRecordId ?? "");
+  const updateRecord = useUpdateRecord(editRecordId ?? "");
 
   const [type, setType] = useState<RecordType>("VISITED");
   const [spotId, setSpotId] = useState<string | null>(null);
@@ -44,11 +54,28 @@ export default function RecordScreen({ onBack }: { onBack: () => void }) {
   const [sheet, setSheet] = useState<SheetKind | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [prefilled, setPrefilled] = useState(false);
 
-  // 스팟 목록이 오면 첫 항목을 기본 선택 (실제 앱에선 GPS/EXIF 기반)
+  // 수정 모드: 기존 기록 값으로 1회 프리필
   useEffect(() => {
+    if (!editing || prefilled || !editRecord) return;
+    setType(editRecord.type);
+    setSpotId(editRecord.spot.id);
+    setCaption(editRecord.caption);
+    setVisibility(editRecord.visibility);
+    setVisitedAt(editRecord.visitedAt ?? todayISO());
+    setPhotos(editRecord.photos.map((p) => p.originalUrl));
+    setPrefilled(true);
+  }, [editing, prefilled, editRecord]);
+
+  // 작성 모드: 스팟 목록이 오면 첫 항목을 기본 선택 (실제 앱에선 GPS/EXIF 기반)
+  useEffect(() => {
+    if (editing) return;
     if (!spotId && spots && spots.length > 0) setSpotId(spots[0].id);
-  }, [spots, spotId]);
+  }, [editing, spots, spotId]);
+
+  // 수정 모드에서 스팟 이름 표시용 (spots 목록에 없을 수 있어 fallback)
+  const editSpotName = editRecord?.spot.name ?? null;
 
   const selectedSpot = useMemo(
     () => spots?.find((s) => s.id === spotId) ?? null,
@@ -112,6 +139,28 @@ export default function RecordScreen({ onBack }: { onBack: () => void }) {
   // ── 제출 ─────────────────────────────
   async function submit() {
     if (submitting) return;
+
+    // 수정 모드: 캡션/공개범위만 반영
+    if (editing) {
+      setSubmitting(true);
+      setFormError(null);
+      updateRecord.mutate(
+        { caption: caption.trim(), visibility },
+        {
+          onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["timeline"] });
+            queryClient.invalidateQueries({ queryKey: ["spot-records"] });
+            onBack();
+          },
+          onError: () => {
+            setFormError("수정에 실패했습니다. 잠시 후 다시 시도해주세요");
+            setSubmitting(false);
+          },
+        }
+      );
+      return;
+    }
+
     if (!spotId) {
       setFormError("위치를 선택해주세요");
       return;
@@ -153,14 +202,16 @@ export default function RecordScreen({ onBack }: { onBack: () => void }) {
         <Pressable onPress={onBack} hitSlop={10}>
           <BackIcon />
         </Pressable>
-        <Text className="text-base font-bold text-ink">기록 작성</Text>
+        <Text className="text-base font-bold text-ink">
+          {editing ? "기록 수정" : "기록 작성"}
+        </Text>
         <Pressable
           onPress={submit}
           disabled={submitting}
           className={`py-1.5 px-4 bg-coral rounded-full ${submitting ? "opacity-50" : ""}`}
         >
           <Text className="text-[13px] font-bold text-white">
-            {submitting ? "게시 중" : "게시"}
+            {submitting ? (editing ? "저장 중" : "게시 중") : editing ? "저장" : "게시"}
           </Text>
         </Pressable>
       </View>
@@ -170,15 +221,18 @@ export default function RecordScreen({ onBack }: { onBack: () => void }) {
         contentContainerStyle={{ paddingTop: 4 }}
         keyboardShouldPersistTaps="handled"
       >
-        {/* 유형 선택 */}
+        {/* 유형 선택 (수정 모드에선 잠금) */}
         <View className="flex-row bg-coral-soft rounded-2xl p-1 mb-4.5">
           {(["VISITED", "WISH"] as RecordType[]).map((t) => {
             const active = type === t;
             return (
               <Pressable
                 key={t}
-                onPress={() => changeType(t)}
-                className={`flex-1 items-center py-2.5 rounded-xl ${active ? "bg-coral" : ""}`}
+                onPress={() => !editing && changeType(t)}
+                disabled={editing}
+                className={`flex-1 items-center py-2.5 rounded-xl ${active ? "bg-coral" : ""} ${
+                  editing && !active ? "opacity-40" : ""
+                }`}
               >
                 <Text
                   className={`text-sm ${
@@ -191,6 +245,11 @@ export default function RecordScreen({ onBack }: { onBack: () => void }) {
             );
           })}
         </View>
+        {editing && (
+          <Text className="text-[11px] text-ink-muted -mt-3 mb-3">
+            수정에서는 캡션과 공개 범위만 바꿀 수 있어요
+          </Text>
+        )}
 
         {/* 사진 */}
         <ScrollView
@@ -206,18 +265,20 @@ export default function RecordScreen({ onBack }: { onBack: () => void }) {
                 className="w-[104px] h-[104px] rounded-2xl bg-coral-soft"
                 resizeMode="cover"
               />
-              <Pressable
-                onPress={() => removePhoto(index)}
-                hitSlop={8}
-                className="absolute -top-1.5 -right-1.5 w-6 h-6 rounded-full items-center justify-center"
-                style={{ backgroundColor: "rgba(43,23,16,0.82)" }}
-              >
-                <Text className="text-white text-[13px] leading-none">×</Text>
-              </Pressable>
+              {!editing && (
+                <Pressable
+                  onPress={() => removePhoto(index)}
+                  hitSlop={8}
+                  className="absolute -top-1.5 -right-1.5 w-6 h-6 rounded-full items-center justify-center"
+                  style={{ backgroundColor: "rgba(43,23,16,0.82)" }}
+                >
+                  <Text className="text-white text-[13px] leading-none">×</Text>
+                </Pressable>
+              )}
             </View>
           ))}
 
-          {canAddMore && (
+          {canAddMore && !editing && (
             <Pressable
               onPress={addPhoto}
               className="w-[104px] h-[104px] rounded-2xl bg-white items-center justify-center gap-1.5"
@@ -232,7 +293,11 @@ export default function RecordScreen({ onBack }: { onBack: () => void }) {
           )}
         </ScrollView>
         <Text className="text-[11px] text-ink-muted mb-4">
-          {isWish ? "위시는 사진 없이 등록할 수 있어요" : "사진을 1장 이상 추가해주세요"}
+          {editing
+            ? "사진과 위치는 수정할 수 없어요"
+            : isWish
+              ? "위시는 사진 없이 등록할 수 있어요"
+              : "사진을 1장 이상 추가해주세요"}
         </Text>
 
         {/* 위치 */}
@@ -244,12 +309,16 @@ export default function RecordScreen({ onBack }: { onBack: () => void }) {
             <View className="flex-row items-center gap-1.5">
               <SmallPinIcon />
               <Text className="text-sm font-bold text-ink">
-                {selectedSpot?.name ?? "위치 선택"}
+                {editing
+                  ? editSpotName ?? selectedSpot?.name ?? "위치"
+                  : selectedSpot?.name ?? "위치 선택"}
               </Text>
             </View>
-            <Pressable onPress={() => setSheet("spot")} hitSlop={8}>
-              <Text className="text-[13px] font-semibold text-coral">위치 수정</Text>
-            </Pressable>
+            {!editing && (
+              <Pressable onPress={() => setSheet("spot")} hitSlop={8}>
+                <Text className="text-[13px] font-semibold text-coral">위치 수정</Text>
+              </Pressable>
+            )}
           </View>
         </View>
 
@@ -280,11 +349,12 @@ export default function RecordScreen({ onBack }: { onBack: () => void }) {
 
           {!isWish && (
             <Pressable
-              onPress={() => setSheet("date")}
+              onPress={() => !editing && setSheet("date")}
+              disabled={editing}
               className="py-2 px-3.5 bg-white border border-border rounded-full"
             >
               <Text className="text-xs font-semibold text-ink">
-                {formatDot(visitedAt)} ▾
+                {formatDot(visitedAt)}{editing ? "" : " ▾"}
               </Text>
             </Pressable>
           )}
@@ -304,7 +374,13 @@ export default function RecordScreen({ onBack }: { onBack: () => void }) {
           }`}
         >
           <Text className="text-[15px] font-bold text-white">
-            {submitting ? "게시 중..." : "게시하기"}
+            {editing
+              ? submitting
+                ? "저장 중..."
+                : "저장하기"
+              : submitting
+                ? "게시 중..."
+                : "게시하기"}
           </Text>
         </Pressable>
       </View>

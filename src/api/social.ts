@@ -37,6 +37,17 @@ export async function addComment(recordId: string, content: string): Promise<Com
   return apiFetch(`/records/${recordId}/comments`, { method: "POST", body: { content } });
 }
 
+export async function deleteComment(
+  recordId: string,
+  commentId: string
+): Promise<void> {
+  if (USE_MOCK) {
+    mock.removeComment(recordId, commentId);
+    return mockDelay(undefined, 150);
+  }
+  await apiFetch(`/records/${recordId}/comments/${commentId}`, { method: "DELETE" });
+}
+
 export async function follow(userId: string): Promise<void> {
   if (USE_MOCK) {
     mock.applyFollow(userId, true);
