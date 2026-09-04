@@ -1,11 +1,12 @@
 import React, { useState } from "react";
 import { View, Text, ScrollView, Image, Pressable, Alert, Platform } from "react-native";
-import { useMe } from "../hooks/queries";
+import { useMe, useWishlist, useUnreadDmCount } from "../hooks/queries";
 import { useAuth } from "../lib/auth";
 import { useNav } from "../lib/nav";
 import { CommentIcon, GearIcon, StarIcon } from "../components/icons";
+import RecordCardView from "../components/RecordCardView";
 import { ErrorView } from "../components/states";
-import { ProfileSkeleton } from "../components/skeletons";
+import { ProfileSkeleton, RecordCardSkeleton } from "../components/skeletons";
 
 function confirmSignOut(onConfirm: () => void) {
   if (Platform.OS === "web") {
@@ -35,6 +36,8 @@ export default function ProfileScreen() {
   const { signOut } = useAuth();
   const nav = useNav();
   const [tab, setTab] = useState<ProfileTab>("map");
+  const unreadDm = useUnreadDmCount();
+  const wishlist = useWishlist(tab === "wishlist" ? "me" : "");
 
   if (isLoading) {
     return (
@@ -65,7 +68,14 @@ export default function ProfileScreen() {
       <View className="flex-row items-center justify-between px-5 pt-2">
         <Text className="text-lg font-black text-ink">프로필</Text>
         <View className="flex-row items-center gap-3.5">
-          <CommentIcon color="#2B1710" size={21} />
+          <Pressable onPress={nav.openMessages} hitSlop={8}>
+            <CommentIcon color="#2B1710" size={21} />
+            {unreadDm > 0 && (
+              <View className="absolute -top-1 -right-1 min-w-[14px] h-[14px] px-0.5 rounded-full bg-coral items-center justify-center">
+                <Text className="text-[9px] font-bold text-white">{unreadDm}</Text>
+              </View>
+            )}
+          </Pressable>
           <Pressable onPress={nav.openSettings} hitSlop={8}>
             <GearIcon />
           </Pressable>
@@ -139,19 +149,36 @@ export default function ProfileScreen() {
           })}
         </View>
 
-        {/* 지도/목록 영역 — 실제 지도 SDK 연동은 별도 작업. 지금은 자리표시 */}
-        <View className="px-5 pt-4" style={{ height: 260 }}>
-          <View className="flex-1 rounded-2xl bg-[#F6E3D8] relative overflow-hidden items-center justify-center">
-            <Text className="text-xs text-ink-muted">
-              {tab === "map" && "발자국 지도"}
-              {tab === "timeline" && "내 타임라인"}
-              {tab === "wishlist" && "위시리스트"}
-            </Text>
-            <View className="absolute right-3.5 bottom-3.5 bg-white px-3.5 py-2 rounded-full shadow">
-              <Text className="text-xs font-bold text-coral">전체 지도 보기 →</Text>
+        {tab === "wishlist" ? (
+          <View className="pt-3">
+            {wishlist.isLoading ? (
+              <>
+                <RecordCardSkeleton />
+                <RecordCardSkeleton />
+              </>
+            ) : (wishlist.data?.length ?? 0) === 0 ? (
+              <Text className="text-[13px] text-ink-muted text-center py-12">
+                가고 싶은 곳을 아직 담지 않았어요
+              </Text>
+            ) : (
+              (wishlist.data ?? []).map((r) => (
+                <RecordCardView key={r.id} record={r} onPress={nav.openRecord} />
+              ))
+            )}
+          </View>
+        ) : (
+          // 지도/타임라인은 하단 탭에서 전체 화면으로. 여기선 미니 안내.
+          <View className="px-5 pt-4" style={{ height: 200 }}>
+            <View className="flex-1 rounded-2xl bg-[#F6E3D8] items-center justify-center gap-1">
+              <Text className="text-xs text-ink-muted">
+                {tab === "map" ? "발자국 지도" : "내 타임라인"}
+              </Text>
+              <Text className="text-[11px] text-ink-muted">
+                하단 탭에서 전체 화면으로 볼 수 있어요
+              </Text>
             </View>
           </View>
-        </View>
+        )}
       </ScrollView>
     </View>
   );

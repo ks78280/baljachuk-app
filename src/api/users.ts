@@ -50,6 +50,12 @@ export async function deleteMe(): Promise<void> {
   await apiFetch("/users/me", { method: "DELETE" });
 }
 
+/** expo-notifications 푸시 토큰 등록/해제 (Phase 6). */
+export async function setPushToken(token: string | null): Promise<void> {
+  if (USE_MOCK) return mockDelay(undefined, 50);
+  await apiFetch("/users/me/push-token", { method: "PATCH", body: { token } });
+}
+
 export async function searchUsers(q: string): Promise<User[]> {
   const term = q.trim().toLowerCase();
   if (USE_MOCK) {

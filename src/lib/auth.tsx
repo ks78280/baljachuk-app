@@ -20,6 +20,8 @@ import {
   SignupInput,
 } from "../api/auth";
 import { setSessionExpiredHandler } from "../api/client";
+import { setPushToken } from "../api/users";
+import { registerForPush } from "./push";
 
 type AuthStatus = "loading" | "authed" | "guest";
 
@@ -84,6 +86,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
     return () => setSessionExpiredHandler(() => {});
   }, [qc]);
+
+  // 로그인되면 1회 푸시 토큰 등록 (웹/시뮬레이터/거부 시 조용히 무시)
+  useEffect(() => {
+    if (status !== "authed") return;
+    let done = false;
+    registerForPush().then((token) => {
+      if (!done && token) setPushToken(token).catch(() => {});
+    });
+    return () => {
+      done = true;
+    };
+  }, [status]);
 
   const signIn = useCallback(async (email: string, password: string) => {
     const res = await apiLogin(email, password);

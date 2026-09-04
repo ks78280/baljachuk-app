@@ -9,6 +9,7 @@ import {
   getTimeline,
   getRecordDetail,
   getMyRecords,
+  getWishlist,
   updateRecord,
   deleteRecord,
   completeWish,
@@ -18,6 +19,13 @@ import {
 import { getMapRecords, getMapClusters, getSpotRecords } from "../api/map";
 import { getExplore } from "../api/explore";
 import { getMe, updateMe, deleteMe, UpdateMeInput } from "../api/users";
+import {
+  getConversations,
+  openConversation,
+  getMessages,
+  sendMessage,
+  markConversationRead,
+} from "../api/dm";
 import { getSpots, searchSpots, unlockSpots } from "../api/spots";
 import { searchUsers } from "../api/users";
 import {
@@ -34,7 +42,14 @@ import {
   follow,
   unfollow,
 } from "../api/social";
-import { RecordCard, Comment, AppNotification, User } from "../types/models";
+import {
+  RecordCard,
+  Comment,
+  AppNotification,
+  User,
+  Conversation,
+  Message,
+} from "../types/models";
 import { Profile } from "../api/users";
 
 /** 화면은 이 훅들만 쓴다. mock↔실서버 전환은 api 모듈 안에서만 일어난다. */
@@ -62,6 +77,9 @@ export const qk = {
   spotSearch: (q: string) => ["search", "spots", q] as const,
   notifications: () => ["notifications"] as const,
   follow: (userId: string) => ["follow", userId] as const,
+  wishlist: (userId: string) => ["wishlist", userId] as const,
+  conversations: () => ["conversations"] as const,
+  messages: (convoId: string) => ["messages", convoId] as const,
 };
 
 /** 한 기록(recordId)을 담고 있는 모든 캐시(상세·타임라인·스팟기록)를 동일하게 패치 */
@@ -419,6 +437,103 @@ export function useToggleFollow(userId: string) {
     },
     onError: (_e, _v, ctx) => {
       qc.setQueryData(qk.follow(userId), ctx?.prev ?? false);
+    },
+  });
+}
+
+// ── Phase 6: 위시리스트 / DM ────────────────────────────────────────
+
+export function useWishlist(userId: string) {
+  return useQuery({
+    queryKey: qk.wishlist(userId),
+    queryFn: () => getWishlist(userId),
+    enabled: !!userId,
+  });
+}
+
+/** 대화방 목록 — 8초 폴링 (설계서 §12.1: MVP는 5~10초 폴링) */
+export function useConversations() {
+  return useQuery({
+    queryKey: qk.conversations(),
+    queryFn: getConversations,
+    refetchInterval: 8000,
+  });
+}
+
+/** 안읽은 DM 총합 (탭/헤더 뱃지용) */
+export function useUnreadDmCount(): number {
+  const { data } = useConversations();
+  return (data ?? []).reduce((sum, c) => sum + c.unreadCount, 0);
+}
+
+/** 대화 메시지 — 5초 폴링 */
+export function useMessages(convoId: string) {
+  return useQuery({
+    queryKey: qk.messages(convoId),
+    queryFn: () => getMessages(convoId),
+    enabled: !!convoId,
+    refetchInterval: 5000,
+  });
+}
+
+export function useOpenConversation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (userId: string) => openConversation(userId),
+    onSuccess: (conv) => {
+      qc.setQueryData<Conversation[]>(qk.conversations(), (list) => {
+        const rest = (list ?? []).filter((c) => c.id !== conv.id);
+        return [conv, ...rest];
+      });
+    },
+  });
+}
+
+/** 메시지 전송 — 낙관적으로 목록 끝에 추가 */
+export function useSendMessage(convoId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (content: string) => sendMessage(convoId, content),
+    onMutate: async (content) => {
+      await qc.cancelQueries({ queryKey: qk.messages(convoId) });
+      const prev = qc.getQueryData<CursorPage<Message>>(qk.messages(convoId));
+      const optimistic: Message = {
+        id: `tmp-${Date.now()}`,
+        content,
+        createdAt: new Date().toISOString(),
+        mine: true,
+        readAt: null,
+      };
+      qc.setQueryData<CursorPage<Message>>(qk.messages(convoId), (p) =>
+        p ? { ...p, items: [...p.items, optimistic] } : { items: [optimistic], nextCursor: null }
+      );
+      return { prev };
+    },
+    onError: (_e, _v, ctx) => {
+      if (ctx?.prev) qc.setQueryData(qk.messages(convoId), ctx.prev);
+    },
+    onSuccess: (real) => {
+      qc.setQueryData<CursorPage<Message>>(qk.messages(convoId), (p) =>
+        p
+          ? {
+              ...p,
+              items: p.items.map((m) => (m.id.startsWith("tmp-") ? real : m)),
+            }
+          : { items: [real], nextCursor: null }
+      );
+      qc.invalidateQueries({ queryKey: qk.conversations() });
+    },
+  });
+}
+
+export function useMarkConversationRead(convoId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => markConversationRead(convoId),
+    onMutate: () => {
+      qc.setQueryData<Conversation[]>(qk.conversations(), (list) =>
+        (list ?? []).map((c) => (c.id === convoId ? { ...c, unreadCount: 0 } : c))
+      );
     },
   });
 }

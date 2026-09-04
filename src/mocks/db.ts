@@ -10,6 +10,8 @@ import {
   AppNotification,
   UserStats,
   Visibility,
+  Conversation,
+  Message,
 } from "../types/models";
 
 const img = (seed: string, w = 800, h = 600) =>
@@ -264,4 +266,78 @@ export function removeComment(recordId: string, commentId: string): void {
     const r = findRecord(recordId);
     if (r && r.commentCount > 0) r.commentCount -= 1;
   }
+}
+
+// ── Phase 6: DM 목 스토어 ────────────────────────────────────────────
+const mockConversations: Conversation[] = [
+  {
+    id: "conv-1",
+    other: users["u-summer"],
+    lastMessage: { content: "그 카페 위치 공유해줘!", createdAt: "2026-09-04T14:20:00Z", mine: false },
+    unreadCount: 1,
+    updatedAt: "2026-09-04T14:20:00Z",
+  },
+];
+const mockMessagesByConvo: Record<string, Message[]> = {
+  "conv-1": [
+    { id: "msg-1", content: "저번에 간 카페 좋더라", createdAt: "2026-09-04T14:10:00Z", mine: true, readAt: "2026-09-04T14:15:00Z" },
+    { id: "msg-2", content: "그 카페 위치 공유해줘!", createdAt: "2026-09-04T14:20:00Z", mine: false, readAt: null },
+  ],
+};
+
+export function listConversations(): Conversation[] {
+  return mockConversations
+    .map((c) => ({ ...c }))
+    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+}
+
+export function openMockConversation(userId: string): Conversation {
+  const existing = mockConversations.find((c) => c.other.id === userId);
+  if (existing) return { ...existing };
+  const other = users[userId] ?? allUsers[0];
+  const conv: Conversation = {
+    id: `conv-${Date.now()}`,
+    other,
+    lastMessage: null,
+    unreadCount: 0,
+    updatedAt: new Date().toISOString(),
+  };
+  mockConversations.push(conv);
+  mockMessagesByConvo[conv.id] = [];
+  return { ...conv };
+}
+
+export function listMessages(conversationId: string): Message[] {
+  return [...(mockMessagesByConvo[conversationId] ?? [])];
+}
+
+export function appendMockMessage(conversationId: string, content: string): Message {
+  const msg: Message = {
+    id: `msg-${Date.now()}`,
+    content,
+    createdAt: new Date().toISOString(),
+    mine: true,
+    readAt: null,
+  };
+  (mockMessagesByConvo[conversationId] ??= []).push(msg);
+  const conv = mockConversations.find((c) => c.id === conversationId);
+  if (conv) {
+    conv.lastMessage = { content, createdAt: msg.createdAt, mine: true };
+    conv.updatedAt = msg.createdAt;
+  }
+  return msg;
+}
+
+export function markMockConversationRead(conversationId: string): void {
+  (mockMessagesByConvo[conversationId] ?? []).forEach((m) => {
+    if (!m.mine && !m.readAt) m.readAt = new Date().toISOString();
+  });
+  const conv = mockConversations.find((c) => c.id === conversationId);
+  if (conv) conv.unreadCount = 0;
+}
+
+export function mockWishlist(): RecordCard[] {
+  return [...timelineMine, ...timelineFriends]
+    .filter((r) => r.type === "WISH")
+    .map((r) => ({ ...r, photos: [...r.photos] }));
 }

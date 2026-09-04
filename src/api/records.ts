@@ -29,6 +29,12 @@ export async function getMyRecords(): Promise<RecordCard[]> {
   return apiFetch("/users/me/records");
 }
 
+/** 위시리스트 (설계서 §10.2). userId="me" 는 본인. */
+export async function getWishlist(userId: string): Promise<RecordCard[]> {
+  if (USE_MOCK) return mockDelay(mock.mockWishlist());
+  return apiFetch(`/users/${userId}/wishlist`);
+}
+
 export interface CreateRecordInput {
   type: RecordType;
   spotId: string;

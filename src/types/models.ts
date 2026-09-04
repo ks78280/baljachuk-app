@@ -114,3 +114,20 @@ export interface AppNotification {
   isRead: boolean;
   createdAt: string;
 }
+
+/** DM (설계서 §9 CONVERSATION/MESSAGE) */
+export interface Conversation {
+  id: string;
+  other: User;
+  lastMessage: { content: string; createdAt: string; mine: boolean } | null;
+  unreadCount: number;
+  updatedAt: string;
+}
+
+export interface Message {
+  id: string;
+  content: string;
+  createdAt: string;
+  mine: boolean;
+  readAt: string | null;
+}

@@ -66,6 +66,9 @@ export default function RootLayout() {
                 <Stack.Screen name="settings" />
                 <Stack.Screen name="profile/edit" />
                 <Stack.Screen name="feed-manage" />
+                <Stack.Screen name="wishlist" />
+                <Stack.Screen name="messages" />
+                <Stack.Screen name="chat/[id]" />
               </Stack>
             </AuthGate>
           </SafeAreaView>

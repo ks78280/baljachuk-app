@@ -1,18 +1,20 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, Pressable, ScrollView, Image } from "react-native";
-import { BackIcon, SearchIcon, SmallPinIcon } from "../components/icons";
+import { View, Text, TextInput, Pressable, ScrollView, Image, Alert, Platform } from "react-native";
+import { BackIcon, SearchIcon, SmallPinIcon, CommentIcon } from "../components/icons";
 import { EmptyView } from "../components/states";
 import { SearchRowsSkeleton } from "../components/skeletons";
 import FollowButton from "../components/FollowButton";
 import { useDebounced } from "../lib/useDebounced";
-import { useUserSearch, useSpotSearch } from "../hooks/queries";
+import { useUserSearch, useSpotSearch, useOpenConversation } from "../hooks/queries";
+import { useNav } from "../lib/nav";
+import { ApiRequestError } from "../types/api";
 import { User, Spot } from "../types/models";
 
 type Tab = "users" | "spots";
 
-function UserRow({ user }: { user: User }) {
+function UserRow({ user, onMessage }: { user: User; onMessage: (u: User) => void }) {
   return (
-    <View className="flex-row items-center gap-3 px-5 py-2.5">
+    <View className="flex-row items-center gap-2.5 px-5 py-2.5">
       {user.profileImageUrl ? (
         <Image source={{ uri: user.profileImageUrl }} className="w-11 h-11 rounded-full bg-coral-soft" />
       ) : (
@@ -26,6 +28,9 @@ function UserRow({ user }: { user: User }) {
           </Text>
         ) : null}
       </View>
+      <Pressable onPress={() => onMessage(user)} hitSlop={8} className="p-1.5">
+        <CommentIcon color="#8C6F63" size={18} />
+      </Pressable>
       <FollowButton userId={user.id} />
     </View>
   );
@@ -61,6 +66,23 @@ export default function SearchScreen({
   const [tab, setTab] = useState<Tab>("users");
   const [query, setQuery] = useState("");
   const debounced = useDebounced(query.trim(), 300);
+  const nav = useNav();
+  const openConvo = useOpenConversation();
+
+  function messageUser(u: User) {
+    if (openConvo.isPending) return;
+    openConvo.mutate(u.id, {
+      onSuccess: (conv) => nav.openChat(conv.id, conv.other.nickname),
+      onError: (e) => {
+        const msg =
+          e instanceof ApiRequestError && e.code === "NOT_MUTUAL"
+            ? "서로 팔로우한 사이에서만 대화할 수 있어요"
+            : "대화방을 열지 못했어요";
+        if (Platform.OS === "web") Alert.alert(msg);
+        else Alert.alert("메시지", msg);
+      },
+    });
+  }
 
   const userQ = useUserSearch(tab === "users" ? debounced : "");
   const spotQ = useSpotSearch(tab === "spots" ? debounced : "");
@@ -129,7 +151,9 @@ export default function SearchScreen({
       ) : (
         <ScrollView className="flex-1" keyboardShouldPersistTaps="handled">
           {tab === "users"
-            ? (userQ.data ?? []).map((u) => <UserRow key={u.id} user={u} />)
+            ? (userQ.data ?? []).map((u) => (
+                <UserRow key={u.id} user={u} onMessage={messageUser} />
+              ))
             : (spotQ.data ?? []).map((s) => (
                 <SpotRow key={s.id} spot={s} onPress={onOpenSpot} />
               ))}

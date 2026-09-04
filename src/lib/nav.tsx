@@ -16,6 +16,10 @@ export function useNav() {
     openSettings: () => router.push("/settings"),
     openProfileEdit: () => router.push("/profile/edit"),
     openFeedManage: () => router.push("/feed-manage"),
+    openWishlist: () => router.push("/wishlist"),
+    openMessages: () => router.push("/messages"),
+    openChat: (id: string, name: string) =>
+      router.push(`/chat/${id}?name=${encodeURIComponent(name)}`),
     close: () => router.back(),
   };
 }
