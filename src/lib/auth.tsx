@@ -38,18 +38,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [status, setStatus] = useState<AuthStatus>("loading");
   const [user, setUser] = useState<User | null>(null);
 
-  // 부팅: 저장된 토큰을 메모리로 복원. 액세스 토큰이 있으면 일단 신뢰하고,
-  // 만료됐으면 첫 요청에서 client.ts 의 401 인터셉터가 refresh 한다.
-  // (부팅마다 refresh 하면 리프레시 토큰이 매번 로테이션돼 불필요하게 churn)
+  // 부팅: 저장된 토큰 복원. 리프레시 토큰이 있으면 앱 실행당 1회 refresh 로
+  // 세션을 검증·연장하고 user 를 채운다(부팅 1회뿐이라 로테이션 churn 아님).
+  // refresh 실패 시에도 액세스 토큰이 남아 있으면 일단 신뢰하고, 만료면
+  // 첫 요청에서 client.ts 의 401 인터셉터가 다시 시도한다.
   useEffect(() => {
     let alive = true;
     (async () => {
       const { accessToken, refreshToken } = await loadTokens();
       if (!alive) return;
-      if (accessToken) {
-        setStatus("authed");
-        return;
-      }
       if (refreshToken) {
         try {
           const res = await apiRefresh(refreshToken);
@@ -63,10 +60,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           return;
         } catch {
           if (!alive) return;
-          clearTokens();
+          if (!accessToken) {
+            clearTokens();
+            setStatus("guest");
+            return;
+          }
+          // refresh 는 실패했지만 액세스 토큰이 있으니 일단 진입
         }
       }
-      setStatus("guest");
+      setStatus(accessToken ? "authed" : "guest");
     })();
     return () => {
       alive = false;

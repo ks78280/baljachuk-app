@@ -30,7 +30,13 @@
         }
       ],
       "expo-router",
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "근처의 잠긴 기록을 해제하기 위해 현재 위치가 필요합니다."
+        }
+      ]
     ],
     "scheme": "baljachuk"
   }

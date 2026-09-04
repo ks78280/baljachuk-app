@@ -15,10 +15,10 @@ import {
   setNotifySetting,
   UpdateRecordInput,
 } from "../api/records";
-import { getMapRecords, getSpotRecords } from "../api/map";
+import { getMapRecords, getMapClusters, getSpotRecords } from "../api/map";
 import { getExplore } from "../api/explore";
 import { getMe, updateMe, deleteMe, UpdateMeInput } from "../api/users";
-import { getSpots, searchSpots } from "../api/spots";
+import { getSpots, searchSpots, unlockSpots } from "../api/spots";
 import { searchUsers } from "../api/users";
 import {
   getNotifications,
@@ -39,9 +39,18 @@ import { Profile } from "../api/users";
 
 /** 화면은 이 훅들만 쓴다. mock↔실서버 전환은 api 모듈 안에서만 일어난다. */
 
+/** bbox 를 캐시 키로 쓸 때 미세한 이동으로 재요청이 폭주하지 않게 반올림 */
+function bkey(b: BBox): string {
+  const r = (n: number) => Math.round(n * 100) / 100;
+  return `${r(b.swLat)},${r(b.swLng)},${r(b.neLat)},${r(b.neLng)}`;
+}
+
 export const qk = {
   timeline: (tab: TimelineTab) => ["timeline", tab] as const,
-  mapRecords: (scope: MapScope) => ["map-records", scope] as const,
+  mapRecords: (scope: MapScope, b: BBox) =>
+    ["map-records", scope, bkey(b)] as const,
+  mapClusters: (b: BBox, zoom: number) =>
+    ["map-clusters", zoom, bkey(b)] as const,
   explore: () => ["explore"] as const,
   me: () => ["me"] as const,
   recordDetail: (id: string) => ["record", id] as const,
@@ -96,13 +105,36 @@ export function useTimeline(tab: TimelineTab) {
   });
 }
 
-// 목 단계에서는 bbox가 의미 없지만, 실서버 전환 시 뷰포트를 그대로 넘기면 된다
-const WHOLE_KOREA: BBox = { swLat: 33, swLng: 124, neLat: 39, neLng: 132 };
-
-export function useMapRecords(scope: MapScope) {
+export function useMapRecords(bbox: BBox, scope: MapScope, enabled = true) {
   return useQuery({
-    queryKey: qk.mapRecords(scope),
-    queryFn: () => getMapRecords(WHOLE_KOREA, scope),
+    queryKey: qk.mapRecords(scope, bbox),
+    queryFn: () => getMapRecords(bbox, scope),
+    enabled,
+    placeholderData: (prev) => prev, // 팬/줌 중 이전 핀 유지
+  });
+}
+
+export function useMapClusters(bbox: BBox, zoom: number, enabled = true) {
+  return useQuery({
+    queryKey: qk.mapClusters(bbox, zoom),
+    queryFn: () => getMapClusters(bbox, zoom),
+    enabled,
+    placeholderData: (prev) => prev,
+  });
+}
+
+/** 현재 위치로 반경 내 잠긴 스팟 해제. 새로 열리면 지도 핀 갱신. */
+export function useUnlockSpots() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ lat, lng }: { lat: number; lng: number }) =>
+      unlockSpots(lat, lng),
+    onSuccess: (unlockedIds) => {
+      if (unlockedIds.length > 0) {
+        qc.invalidateQueries({ queryKey: ["map-records"] });
+        qc.invalidateQueries({ queryKey: ["spot-records"] });
+      }
+    },
   });
 }
 

@@ -8,6 +8,15 @@ export async function getSpots(): Promise<Spot[]> {
   return apiFetch("/spots");
 }
 
+/**
+ * 현재 좌표를 보내 반경 내 잠긴 스팟을 해제. 새로 해제된 스팟 id 목록 반환.
+ * (설계서 §11.4.3)
+ */
+export async function unlockSpots(lat: number, lng: number): Promise<string[]> {
+  if (USE_MOCK) return mockDelay([]);
+  return apiFetch("/spots/unlock", { method: "POST", body: { lat, lng } });
+}
+
 /** 지역/스팟 검색 (이름·주소 매칭). */
 export async function searchSpots(q: string): Promise<Spot[]> {
   const term = q.trim().toLowerCase();
