@@ -20,6 +20,10 @@ export default function MapCanvas({
 
   useEffect(() => {
     function onMessage(e: MessageEvent) {
+      // srcDoc iframe 은 origin 이 "null"이라 문자열 비교가 무의미 — 발신 window
+      // 자체가 이 iframe 의 contentWindow 인지로 검증 (다른 프레임/확장 프로그램의
+      // 스푸핑 메시지를 무시).
+      if (e.source !== iframeRef.current?.contentWindow) return;
       let msg: any;
       try {
         msg = typeof e.data === "string" ? JSON.parse(e.data) : e.data;

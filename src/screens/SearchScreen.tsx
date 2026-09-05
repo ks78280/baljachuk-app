@@ -15,25 +15,32 @@ type Tab = "users" | "spots";
 function UserRow({
   user,
   onMessage,
+  onOpenProfile,
 }: {
   user: UserSearchResult;
   onMessage: (u: UserSearchResult) => void;
+  onOpenProfile: (id: string) => void;
 }) {
   return (
     <View className="flex-row items-center gap-2.5 px-5 py-2.5">
-      {user.profileImageUrl ? (
-        <Image source={{ uri: user.profileImageUrl }} className="w-11 h-11 rounded-full bg-coral-soft" />
-      ) : (
-        <View className="w-11 h-11 rounded-full bg-[#FFCBB4]" />
-      )}
-      <View className="flex-1">
-        <Text className="text-sm font-bold text-ink">{user.nickname}</Text>
-        {user.bio ? (
-          <Text className="text-xs text-ink-muted" numberOfLines={1}>
-            {user.bio}
-          </Text>
-        ) : null}
-      </View>
+      <Pressable
+        onPress={() => onOpenProfile(user.id)}
+        className="flex-1 flex-row items-center gap-2.5"
+      >
+        {user.profileImageUrl ? (
+          <Image source={{ uri: user.profileImageUrl }} className="w-11 h-11 rounded-full bg-coral-soft" />
+        ) : (
+          <View className="w-11 h-11 rounded-full bg-[#FFCBB4]" />
+        )}
+        <View className="flex-1">
+          <Text className="text-sm font-bold text-ink">{user.nickname}</Text>
+          {user.bio ? (
+            <Text className="text-xs text-ink-muted" numberOfLines={1}>
+              {user.bio}
+            </Text>
+          ) : null}
+        </View>
+      </Pressable>
       <Pressable onPress={() => onMessage(user)} hitSlop={8} className="p-1.5">
         <CommentIcon color="#8C6F63" size={18} />
       </Pressable>
@@ -158,7 +165,7 @@ export default function SearchScreen({
         <ScrollView className="flex-1" keyboardShouldPersistTaps="handled">
           {tab === "users"
             ? (userQ.data ?? []).map((u) => (
-                <UserRow key={u.id} user={u} onMessage={messageUser} />
+                <UserRow key={u.id} user={u} onMessage={messageUser} onOpenProfile={nav.openUserProfile} />
               ))
             : (spotQ.data ?? []).map((s) => (
                 <SpotRow key={s.id} spot={s} onPress={onOpenSpot} />

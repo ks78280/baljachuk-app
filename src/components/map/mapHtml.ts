@@ -120,8 +120,10 @@ export function buildMapHtml(init: MapInit): string {
     else if (m.type === "me") setMe(m.lat, m.lng);
     else if (m.type === "flyTo") map.flyTo([m.lat, m.lng], m.zoom || map.getZoom());
   };
-  // 웹(iframe): 부모가 postMessage 로 전달
+  // 웹(iframe): 부모가 postMessage 로 전달. origin 은 srcDoc 이라 "null"이 되어
+  // 문자열 비교가 무의미하므로, 발신 window 가 실제로 이 iframe 의 부모인지로 검증.
   window.addEventListener("message", function(e){
+    if (e.source !== window.parent) return;
     try { window.__host(e.data); } catch(_) {}
   });
 

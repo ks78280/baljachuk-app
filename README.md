@@ -91,6 +91,5 @@ Phase 0 프론트 프레임(mock) → 1 Expo Router → 2 인증 → 3 NestJS �
 
 ## 알려진 한계
 
-- 다른 유저 프로필 전용 화면 없음 (스팟 상세로 우회)
 - 지도는 Leaflet WebView — 네이티브 지도 SDK 아님
 - 푸시 알림은 실기기에서만 실제 수신

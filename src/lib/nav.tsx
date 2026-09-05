@@ -14,6 +14,7 @@ export function useNav() {
     openSearch: () => router.push("/search"),
     openNotifications: () => router.push("/notifications"),
     openProfile: () => router.navigate("/profile"),
+    openUserProfile: (id: string) => router.push(`/user/${id}`),
     openSettings: () => router.push("/settings"),
     openProfileEdit: () => router.push("/profile/edit"),
     openFeedManage: () => router.push("/feed-manage"),

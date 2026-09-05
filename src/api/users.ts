@@ -25,10 +25,10 @@ export async function getUserProfile(id: string): Promise<Profile> {
     return mockDelay({ user: mock.me, stats: mock.meStats, isMe: id === mock.me.id, followedByMe: false });
   }
   const [user, stats] = await Promise.all([
-    apiFetch<User>(`/users/${id}`),
+    apiFetch<User & { followedByMe: boolean }>(`/users/${id}`),
     apiFetch<UserStats>(`/users/${id}/stats`),
   ]);
-  return { user, stats, isMe: false, followedByMe: false };
+  return { user, stats, isMe: false, followedByMe: user.followedByMe };
 }
 
 export interface UpdateMeInput {

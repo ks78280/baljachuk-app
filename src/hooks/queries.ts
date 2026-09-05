@@ -18,7 +18,7 @@ import {
 } from "../api/records";
 import { getMapRecords, getMapClusters, getSpotRecords } from "../api/map";
 import { getExplore } from "../api/explore";
-import { getMe, updateMe, deleteMe, UpdateMeInput } from "../api/users";
+import { getMe, getUserProfile, updateMe, deleteMe, UpdateMeInput } from "../api/users";
 import {
   getConversations,
   openConversation,
@@ -68,6 +68,7 @@ export const qk = {
     ["map-clusters", zoom, bkey(b)] as const,
   explore: () => ["explore"] as const,
   me: () => ["me"] as const,
+  userProfile: (id: string) => ["user-profile", id] as const,
   recordDetail: (id: string) => ["record", id] as const,
   myRecords: () => ["my-records"] as const,
   spots: () => ["spots"] as const,
@@ -162,6 +163,14 @@ export function useExplore() {
 
 export function useMe() {
   return useQuery({ queryKey: qk.me(), queryFn: getMe });
+}
+
+export function useUserProfile(id: string) {
+  return useQuery({
+    queryKey: qk.userProfile(id),
+    queryFn: () => getUserProfile(id),
+    enabled: !!id,
+  });
 }
 
 export function useRecordDetail(id: string) {

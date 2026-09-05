@@ -2,6 +2,7 @@ import React from "react";
 import { View, Text, Image, Pressable } from "react-native";
 import { RecordCard } from "../types/models";
 import { formatRelative } from "../lib/time";
+import { useNav } from "../lib/nav";
 import { CommentIcon, StarIcon, LockIcon } from "./icons";
 import LikeButton from "./LikeButton";
 
@@ -20,6 +21,7 @@ export default function RecordCardView({
   record: RecordCard;
   onPress?: (id: string) => void;
 }) {
+  const nav = useNav();
   // 위시(가고 싶은 곳) — 점선 카드
   if (record.type === "WISH") {
     return (
@@ -43,7 +45,10 @@ export default function RecordCardView({
       onPress={() => onPress?.(record.id)}
       className="bg-white border border-border rounded-2xl overflow-hidden"
     >
-      <View className="flex-row items-center gap-2.5 p-3.5">
+      <Pressable
+        onPress={() => nav.openUserProfile(record.author.id)}
+        className="flex-row items-center gap-2.5 p-3.5"
+      >
         <Avatar uri={record.author.profileImageUrl} />
         <View className="flex-1">
           <Text className="text-[13px] font-bold text-ink">{record.author.nickname}</Text>
@@ -51,7 +56,7 @@ export default function RecordCardView({
             {record.spot.name} · {formatRelative(record.createdAt)}
           </Text>
         </View>
-      </View>
+      </Pressable>
 
       {record.locked ? (
         <View className="w-full h-[150px] bg-[#D8C3BA] items-center justify-center">
