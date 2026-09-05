@@ -1,5 +1,5 @@
 import { apiFetch, USE_MOCK, mockDelay } from "./client";
-import { Comment } from "../types/models";
+import { Comment, UserSearchResult } from "../types/models";
 import * as mock from "../mocks/db";
 
 export async function likeRecord(recordId: string): Promise<void> {
@@ -62,4 +62,14 @@ export async function unfollow(userId: string): Promise<void> {
     return mockDelay(undefined, 150);
   }
   await apiFetch(`/follows/${userId}`, { method: "DELETE" });
+}
+
+export async function getFollowers(userId: string): Promise<UserSearchResult[]> {
+  if (USE_MOCK) return mockDelay(mock.allUsers.map((u) => ({ ...u, followedByMe: false })));
+  return apiFetch(`/users/${userId}/followers`);
+}
+
+export async function getFollowing(userId: string): Promise<UserSearchResult[]> {
+  if (USE_MOCK) return mockDelay(mock.allUsers.map((u) => ({ ...u, followedByMe: true })));
+  return apiFetch(`/users/${userId}/following`);
 }

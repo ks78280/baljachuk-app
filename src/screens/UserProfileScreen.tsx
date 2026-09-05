@@ -12,12 +12,12 @@ import { ApiRequestError } from "../types/api";
 
 type ProfileTab = "map" | "timeline" | "wishlist";
 
-function Stat({ value, label }: { value: number; label: string }) {
+function Stat({ value, label, onPress }: { value: number; label: string; onPress?: () => void }) {
   return (
-    <View className="items-center">
+    <Pressable className="items-center" onPress={onPress} disabled={!onPress}>
       <Text className="text-base font-extrabold text-ink">{value}</Text>
       <Text className="text-[11px] text-ink-muted">{label}</Text>
-    </View>
+    </Pressable>
   );
 }
 
@@ -114,8 +114,8 @@ export default function UserProfileScreen({
 
           <View className="flex-row justify-center gap-7 mb-4">
             <Stat value={stats.visitedSpotCount} label="방문 지역" />
-            <Stat value={stats.followerCount} label="팔로워" />
-            <Stat value={stats.followingCount} label="팔로잉" />
+            <Stat value={stats.followerCount} label="팔로워" onPress={() => nav.openFollowers(userId)} />
+            <Stat value={stats.followingCount} label="팔로잉" onPress={() => nav.openFollowing(userId)} />
           </View>
 
           <FollowButton userId={userId} initialFollowing={data.followedByMe} size="md" />

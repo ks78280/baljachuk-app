@@ -31,13 +31,16 @@ export async function getMapRecords(
 
 export async function getMapClusters(
   bbox: BBox,
-  zoom: number
+  zoom: number,
+  scope: MapScope = "all"
 ): Promise<MapCluster[]> {
   if (USE_MOCK) {
-    // 목: 뷰포트 내 핀을 격자로 묶어 대충 클러스터링
+    // 목: 뷰포트 내 핀을 scope로 먼저 걸러낸 뒤 격자로 묶어 대충 클러스터링
+    const scoped =
+      scope === "me" ? mock.mapPins.filter((p) => ["r-1", "r-2"].includes(p.recordId)) : mock.mapPins;
     const cell = 0.5 / Math.pow(2, Math.max(0, Math.min(14, zoom - 3)));
     const buckets = new Map<string, { latSum: number; lngSum: number; count: number; n: number }>();
-    for (const p of mock.mapPins) {
+    for (const p of scoped) {
       if (!inBox(p.latitude, p.longitude, bbox)) continue;
       const key = `${Math.floor(p.latitude / cell)}:${Math.floor(p.longitude / cell)}`;
       const b = buckets.get(key) ?? { latSum: 0, lngSum: 0, count: 0, n: 0 };
@@ -62,6 +65,7 @@ export async function getMapClusters(
       neLat: bbox.neLat,
       neLng: bbox.neLng,
       zoom,
+      scope,
     },
   });
 }

@@ -1,39 +1,25 @@
 import React, { useState } from "react";
-import { View, Text, ScrollView, Image, Pressable, Alert, Platform } from "react-native";
+import { View, Text, ScrollView, Image, Pressable } from "react-native";
 import { useMe, useWishlist, useUnreadDmCount } from "../hooks/queries";
-import { useAuth } from "../lib/auth";
 import { useNav } from "../lib/nav";
 import { CommentIcon, GearIcon, StarIcon } from "../components/icons";
 import RecordCardView from "../components/RecordCardView";
 import { ErrorView } from "../components/states";
 import { ProfileSkeleton, RecordCardSkeleton } from "../components/skeletons";
 
-function confirmSignOut(onConfirm: () => void) {
-  if (Platform.OS === "web") {
-    // web Alert 은 버튼이 없어 즉시 실행
-    onConfirm();
-    return;
-  }
-  Alert.alert("로그아웃", "정말 로그아웃할까요?", [
-    { text: "취소", style: "cancel" },
-    { text: "로그아웃", style: "destructive", onPress: onConfirm },
-  ]);
-}
-
 type ProfileTab = "map" | "timeline" | "wishlist";
 
-function Stat({ value, label }: { value: number; label: string }) {
+function Stat({ value, label, onPress }: { value: number; label: string; onPress?: () => void }) {
   return (
-    <View className="items-center">
+    <Pressable className="items-center" onPress={onPress} disabled={!onPress}>
       <Text className="text-base font-extrabold text-ink">{value}</Text>
       <Text className="text-[11px] text-ink-muted">{label}</Text>
-    </View>
+    </Pressable>
   );
 }
 
 export default function ProfileScreen() {
   const { data, isLoading, isError, error, refetch } = useMe();
-  const { signOut } = useAuth();
   const nav = useNav();
   const [tab, setTab] = useState<ProfileTab>("map");
   const unreadDm = useUnreadDmCount();
@@ -99,8 +85,8 @@ export default function ProfileScreen() {
 
           <View className="flex-row justify-center gap-7 mb-4">
             <Stat value={stats.visitedSpotCount} label="방문 지역" />
-            <Stat value={stats.followerCount} label="팔로워" />
-            <Stat value={stats.followingCount} label="팔로잉" />
+            <Stat value={stats.followerCount} label="팔로워" onPress={() => nav.openFollowers(user.id)} />
+            <Stat value={stats.followingCount} label="팔로잉" onPress={() => nav.openFollowing(user.id)} />
           </View>
 
           <View className="w-full flex-row gap-2">
@@ -117,13 +103,6 @@ export default function ProfileScreen() {
               <Text className="text-[13px] font-bold text-ink">피드 관리</Text>
             </Pressable>
           </View>
-
-          <Pressable
-            onPress={() => confirmSignOut(signOut)}
-            className="w-full items-center py-2.5 mt-2"
-          >
-            <Text className="text-[13px] font-bold text-ink-muted">로그아웃</Text>
-          </Pressable>
         </View>
 
         <View className="flex-row border-b border-border px-5">

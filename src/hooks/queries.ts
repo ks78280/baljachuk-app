@@ -41,6 +41,8 @@ import {
   deleteComment,
   follow,
   unfollow,
+  getFollowers,
+  getFollowing,
 } from "../api/social";
 import {
   RecordCard,
@@ -64,8 +66,8 @@ export const qk = {
   timeline: (tab: TimelineTab) => ["timeline", tab] as const,
   mapRecords: (scope: MapScope, b: BBox) =>
     ["map-records", scope, bkey(b)] as const,
-  mapClusters: (b: BBox, zoom: number) =>
-    ["map-clusters", zoom, bkey(b)] as const,
+  mapClusters: (b: BBox, zoom: number, scope: MapScope) =>
+    ["map-clusters", scope, zoom, bkey(b)] as const,
   explore: () => ["explore"] as const,
   me: () => ["me"] as const,
   userProfile: (id: string) => ["user-profile", id] as const,
@@ -78,6 +80,8 @@ export const qk = {
   spotSearch: (q: string) => ["search", "spots", q] as const,
   notifications: () => ["notifications"] as const,
   follow: (userId: string) => ["follow", userId] as const,
+  followers: (userId: string) => ["followers", userId] as const,
+  following: (userId: string) => ["following", userId] as const,
   wishlist: (userId: string) => ["wishlist", userId] as const,
   conversations: () => ["conversations"] as const,
   messages: (convoId: string) => ["messages", convoId] as const,
@@ -133,10 +137,10 @@ export function useMapRecords(bbox: BBox, scope: MapScope, enabled = true) {
   });
 }
 
-export function useMapClusters(bbox: BBox, zoom: number, enabled = true) {
+export function useMapClusters(bbox: BBox, zoom: number, scope: MapScope, enabled = true) {
   return useQuery({
-    queryKey: qk.mapClusters(bbox, zoom),
-    queryFn: () => getMapClusters(bbox, zoom),
+    queryKey: qk.mapClusters(bbox, zoom, scope),
+    queryFn: () => getMapClusters(bbox, zoom, scope),
     enabled,
     placeholderData: (prev) => prev,
   });
@@ -433,6 +437,22 @@ export function useFollowState(userId: string, initial: boolean): boolean {
     staleTime: Infinity,
   });
   return data ?? initial;
+}
+
+export function useFollowers(userId: string) {
+  return useQuery({
+    queryKey: qk.followers(userId),
+    queryFn: () => getFollowers(userId),
+    enabled: !!userId,
+  });
+}
+
+export function useFollowing(userId: string) {
+  return useQuery({
+    queryKey: qk.following(userId),
+    queryFn: () => getFollowing(userId),
+    enabled: !!userId,
+  });
 }
 
 export function useToggleFollow(userId: string) {

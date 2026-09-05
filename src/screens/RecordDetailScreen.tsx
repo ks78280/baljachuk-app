@@ -88,12 +88,17 @@ function CommentRow({
   comment: Comment;
   onDelete?: () => void;
 }) {
+  const nav = useNav();
   return (
     <View className="flex-row gap-2.5 py-2.5">
-      <Avatar uri={comment.author.profileImageUrl} size={28} />
+      <Pressable onPress={() => nav.openUserProfile(comment.author.id)}>
+        <Avatar uri={comment.author.profileImageUrl} size={28} />
+      </Pressable>
       <View className="flex-1">
         <View className="flex-row items-center gap-1.5">
-          <Text className="text-[13px] font-bold text-ink">{comment.author.nickname}</Text>
+          <Pressable onPress={() => nav.openUserProfile(comment.author.id)}>
+            <Text className="text-[13px] font-bold text-ink">{comment.author.nickname}</Text>
+          </Pressable>
           <Text className="text-[11px] text-ink-muted">{formatRelative(comment.createdAt)}</Text>
           {onDelete && (
             <Pressable onPress={onDelete} hitSlop={8} className="ml-auto">
@@ -206,9 +211,16 @@ export default function RecordDetailScreen({
           >
             {/* 작성자 + 스팟 */}
             <View className="flex-row items-center gap-2.5 px-5 pb-3">
-              <Avatar uri={record.author.profileImageUrl} />
+              <Pressable
+                onPress={() => nav.openUserProfile(record.author.id)}
+                hitSlop={4}
+              >
+                <Avatar uri={record.author.profileImageUrl} />
+              </Pressable>
               <View className="flex-1">
-                <Text className="text-sm font-bold text-ink">{record.author.nickname}</Text>
+                <Pressable onPress={() => nav.openUserProfile(record.author.id)} hitSlop={4}>
+                  <Text className="text-sm font-bold text-ink">{record.author.nickname}</Text>
+                </Pressable>
                 <Pressable
                   onPress={() => onOpenSpot(record.spot.id)}
                   className="flex-row items-center gap-1"

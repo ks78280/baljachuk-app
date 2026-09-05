@@ -37,7 +37,7 @@ export default function MapScreen() {
   const bbox: BBox = region;
 
   const pinsQ = useMapRecords(bbox, scope, !showClusters);
-  const clustersQ = useMapClusters(bbox, region.zoom, showClusters);
+  const clustersQ = useMapClusters(bbox, region.zoom, scope, showClusters);
   const loading = showClusters ? clustersQ.isLoading : pinsQ.isLoading;
   const errored = showClusters ? clustersQ.isError : pinsQ.isError;
 
