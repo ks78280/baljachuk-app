@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { View, Text, Pressable, ActivityIndicator } from "react-native";
+import { View, Text, Pressable, ActivityIndicator, ScrollView, RefreshControl } from "react-native";
 import { BBox, MapScope } from "../types/api";
 import {
   useMapRecords,
@@ -40,6 +40,11 @@ export default function MapScreen() {
   const clustersQ = useMapClusters(bbox, region.zoom, scope, showClusters);
   const loading = showClusters ? clustersQ.isLoading : pinsQ.isLoading;
   const errored = showClusters ? clustersQ.isError : pinsQ.isError;
+  const refreshing = showClusters ? clustersQ.isRefetching : pinsQ.isRefetching;
+
+  const onRefresh = () => {
+    (showClusters ? clustersQ : pinsQ).refetch();
+  };
 
   // 지도 진입 시 1회: 현재 위치 조회 → 반경 내 잠긴 스팟 해제 (설계서 §11.4.3)
   useEffect(() => {
@@ -94,6 +99,15 @@ export default function MapScreen() {
         </View>
       </View>
 
+      {/* 지도는 스크롤 대상이 아니지만, 콘텐츠가 화면을 꽉 채우게 두고 최상단
+          오버스크롤(당겨서 새로고침)만 살린다. */}
+      <ScrollView
+        className="flex-1"
+        contentContainerStyle={{ flexGrow: 1 }}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#FF6B45" colors={["#FF6B45"]} />
+        }
+      >
       <View className="flex-1 relative overflow-hidden bg-[#F3ECE2]">
         <MapCanvas
           markers={markers}
@@ -124,7 +138,7 @@ export default function MapScreen() {
         </View>
 
         {loading && (
-          <View className="absolute right-4 top-4 bg-white/90 rounded-full p-1.5">
+          <View className="absolute left-4 top-16 bg-white/90 rounded-full p-1.5">
             <ActivityIndicator color="#FF6B45" size="small" />
           </View>
         )}
@@ -141,6 +155,7 @@ export default function MapScreen() {
           </View>
         )}
       </View>
+      </ScrollView>
     </View>
   );
 }

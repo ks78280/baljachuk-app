@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, ScrollView, Pressable } from "react-native";
+import { View, Text, ScrollView, Pressable, RefreshControl } from "react-native";
 import { TimelineTab } from "../types/api";
 import { useTimeline } from "../hooks/queries";
 import { useNav } from "../lib/nav";
@@ -14,7 +14,7 @@ const TABS: { key: TimelineTab; label: string }[] = [
 
 export default function TimelineScreen() {
   const [tab, setTab] = useState<TimelineTab>("mine");
-  const { data, isLoading, isError, error, refetch } = useTimeline(tab);
+  const { data, isLoading, isError, error, refetch, isRefetching } = useTimeline(tab);
   const { openRecord } = useNav();
 
   return (
@@ -53,6 +53,9 @@ export default function TimelineScreen() {
         <ScrollView
           className="flex-1 px-5"
           contentContainerStyle={{ paddingBottom: 24, gap: 16 }}
+          refreshControl={
+            <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#FF6B45" colors={["#FF6B45"]} />
+          }
         >
           {data.items.map((record) => (
             <RecordCardView key={record.id} record={record} onPress={openRecord} />

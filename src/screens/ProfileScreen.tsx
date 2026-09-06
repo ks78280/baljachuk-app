@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, ScrollView, Image, Pressable } from "react-native";
+import { View, Text, ScrollView, Image, Pressable, RefreshControl } from "react-native";
 import { useMe, useWishlist, useUnreadDmCount } from "../hooks/queries";
 import { useNav } from "../lib/nav";
 import { CommentIcon, GearIcon, StarIcon } from "../components/icons";
@@ -19,11 +19,16 @@ function Stat({ value, label, onPress }: { value: number; label: string; onPress
 }
 
 export default function ProfileScreen() {
-  const { data, isLoading, isError, error, refetch } = useMe();
+  const { data, isLoading, isError, error, refetch, isRefetching } = useMe();
   const nav = useNav();
   const [tab, setTab] = useState<ProfileTab>("map");
   const unreadDm = useUnreadDmCount();
   const wishlist = useWishlist(tab === "wishlist" ? "me" : "");
+
+  const onRefresh = () => {
+    refetch();
+    if (tab === "wishlist") wishlist.refetch();
+  };
 
   if (isLoading) {
     return (
@@ -68,7 +73,13 @@ export default function ProfileScreen() {
         </View>
       </View>
 
-      <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 24 }}>
+      <ScrollView
+        className="flex-1"
+        contentContainerStyle={{ paddingBottom: 24 }}
+        refreshControl={
+          <RefreshControl refreshing={isRefetching} onRefresh={onRefresh} tintColor="#FF6B45" colors={["#FF6B45"]} />
+        }
+      >
         <View className="px-5 pt-3.5 pb-4 items-center">
           {user.profileImageUrl ? (
             <Image

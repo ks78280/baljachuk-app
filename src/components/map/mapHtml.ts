@@ -57,8 +57,9 @@ export function buildMapHtml(init: MapInit): string {
     }
   }
 
-  var map = L.map("map", { zoomControl: true, attributionControl: false })
+  var map = L.map("map", { zoomControl: false, attributionControl: false })
     .setView([${init.lat}, ${init.lng}], ${init.zoom});
+  L.control.zoom({ position: "topright" }).addTo(map);
   L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19 }).addTo(map);
 
   var markerLayer = L.layerGroup().addTo(map);

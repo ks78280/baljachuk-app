@@ -5,6 +5,7 @@ import {
   ScrollView,
   Image,
   Pressable,
+  RefreshControl,
   useWindowDimensions,
 } from "react-native";
 import { useExplore } from "../hooks/queries";
@@ -84,7 +85,7 @@ function PersonRow({ item }: { item: SuggestedUser }) {
 }
 
 export default function ExploreScreen() {
-  const { data, isLoading, isError, error, refetch } = useExplore();
+  const { data, isLoading, isError, error, refetch, isRefetching } = useExplore();
   const [subTab, setSubTab] = useState<"spots" | "users">("spots");
   const trendingCardWidth = useTrendingCardWidth();
   const { openSpot, openSearch } = useNav();
@@ -110,7 +111,13 @@ export default function ExploreScreen() {
       ) : isError || !data ? (
         <ErrorView error={error} onRetry={refetch} />
       ) : (
-        <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 24 }}>
+        <ScrollView
+          className="flex-1"
+          contentContainerStyle={{ paddingBottom: 24 }}
+          refreshControl={
+            <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#FF6B45" colors={["#FF6B45"]} />
+          }
+        >
           <View className="flex-row gap-5 px-5 pb-4 border-b border-border">
             {(
               [
