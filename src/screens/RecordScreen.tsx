@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -13,12 +13,14 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useQueryClient } from "@tanstack/react-query";
 import { BackIcon, CameraIcon, SmallPinIcon } from "../components/icons";
 import PickerSheet, { PickerOption } from "../components/PickerSheet";
+import LocationPickerModal, { PickedLocation } from "../components/LocationPickerModal";
+import CalendarSheet from "../components/CalendarSheet";
 import { MAX_PHOTOS, takePhoto, pickFromLibrary } from "../lib/imagePicker";
 import { useKeyboardHeight } from "../lib/useKeyboard";
-import { todayISO, formatDot, recentDateOptions } from "../lib/date";
+import { todayISO, formatDot } from "../lib/date";
 import { createRecord } from "../api/records";
 import { uploadPhotos } from "../api/uploads";
-import { useSpots, useRecordDetail, useUpdateRecord } from "../hooks/queries";
+import { useRecordDetail, useUpdateRecord } from "../hooks/queries";
 import { RecordType, Visibility } from "../types/models";
 
 const VIS_LABEL: Record<Visibility, string> = {
@@ -39,14 +41,13 @@ export default function RecordScreen({
   const insets = useSafeAreaInsets();
   const kb = useKeyboardHeight();
   const queryClient = useQueryClient();
-  const { data: spots } = useSpots();
 
   const editing = !!editRecordId;
   const { data: editRecord } = useRecordDetail(editRecordId ?? "");
   const updateRecord = useUpdateRecord(editRecordId ?? "");
 
   const [type, setType] = useState<RecordType>("VISITED");
-  const [spotId, setSpotId] = useState<string | null>(null);
+  const [picked, setPicked] = useState<PickedLocation | null>(null);
   const [caption, setCaption] = useState("");
   const [visibility, setVisibility] = useState<Visibility>("FRIENDS");
   const [visitedAt, setVisitedAt] = useState<string>(todayISO());
@@ -61,7 +62,6 @@ export default function RecordScreen({
   useEffect(() => {
     if (!editing || prefilled || !editRecord) return;
     setType(editRecord.type);
-    setSpotId(editRecord.spot.id);
     setCaption(editRecord.caption);
     setVisibility(editRecord.visibility);
     setVisitedAt(editRecord.visitedAt ?? todayISO());
@@ -69,19 +69,8 @@ export default function RecordScreen({
     setPrefilled(true);
   }, [editing, prefilled, editRecord]);
 
-  // 작성 모드: 스팟 목록이 오면 첫 항목을 기본 선택 (실제 앱에선 GPS/EXIF 기반)
-  useEffect(() => {
-    if (editing) return;
-    if (!spotId && spots && spots.length > 0) setSpotId(spots[0].id);
-  }, [editing, spots, spotId]);
-
-  // 수정 모드에서 스팟 이름 표시용 (spots 목록에 없을 수 있어 fallback)
+  // 수정 모드에서 스팟 이름 표시용 (위치는 수정 불가)
   const editSpotName = editRecord?.spot.name ?? null;
-
-  const selectedSpot = useMemo(
-    () => spots?.find((s) => s.id === spotId) ?? null,
-    [spots, spotId]
-  );
 
   const isWish = type === "WISH";
 
@@ -122,20 +111,11 @@ export default function RecordScreen({
   }
 
   // ── 시트 옵션 ─────────────────────────
-  const spotOptions: PickerOption<string>[] = (spots ?? []).map((s) => ({
-    label: s.name,
-    sublabel: s.address ?? undefined,
-    value: s.id,
-  }));
   const visibilityOptions: PickerOption<Visibility>[] = [
     { label: VIS_LABEL.PUBLIC, value: "PUBLIC" },
     { label: VIS_LABEL.FRIENDS, value: "FRIENDS" },
     { label: VIS_LABEL.PRIVATE, value: "PRIVATE", disabled: isWish },
   ];
-  const dateOptions: PickerOption<string>[] = recentDateOptions().map((o) => ({
-    label: o.label,
-    value: o.value,
-  }));
 
   // ── 제출 ─────────────────────────────
   async function submit() {
@@ -162,7 +142,7 @@ export default function RecordScreen({
       return;
     }
 
-    if (!spotId) {
+    if (!picked) {
       setFormError("위치를 선택해주세요");
       return;
     }
@@ -178,7 +158,12 @@ export default function RecordScreen({
       const photoUrls = isWish ? [] : await uploadPhotos(photos);
       await createRecord({
         type,
-        spotId,
+        spot: {
+          name: picked.name,
+          latitude: picked.latitude,
+          longitude: picked.longitude,
+          address: picked.address ?? undefined,
+        },
         caption: caption.trim(),
         photoUrls,
         visibility,
@@ -304,24 +289,24 @@ export default function RecordScreen({
 
         {/* 위치 */}
         <View className="mb-4">
-          <View className="w-full h-[120px] rounded-2xl bg-[#F6E3D8] items-center justify-center">
-            <SmallPinIcon size={28} />
-          </View>
-          <View className="flex-row items-center justify-between mt-2.5">
-            <View className="flex-row items-center gap-1.5">
-              <SmallPinIcon />
-              <Text className="text-sm font-bold text-ink">
-                {editing
-                  ? editSpotName ?? selectedSpot?.name ?? "위치"
-                  : selectedSpot?.name ?? "위치 선택"}
-              </Text>
-            </View>
+          <Pressable
+            onPress={() => !editing && setSheet("spot")}
+            disabled={editing}
+            className="w-full rounded-2xl bg-[#F6E3D8] items-center justify-center py-6 gap-1.5"
+          >
+            <SmallPinIcon size={26} />
+            <Text className="text-sm font-bold text-ink">
+              {editing ? editSpotName ?? "위치" : picked?.name ?? "지도에서 위치 선택"}
+            </Text>
+            {!editing && picked?.address ? (
+              <Text className="text-[11px] text-ink-muted">{picked.address}</Text>
+            ) : null}
             {!editing && (
-              <Pressable onPress={() => setSheet("spot")} hitSlop={8}>
-                <Text className="text-[13px] font-semibold text-coral">위치 수정</Text>
-              </Pressable>
+              <Text className="text-[12px] font-semibold text-coral mt-0.5">
+                {picked ? "위치 변경" : "지도 열기"}
+              </Text>
             )}
-          </View>
+          </Pressable>
         </View>
 
         {/* 캡션 */}
@@ -387,12 +372,14 @@ export default function RecordScreen({
         </Pressable>
       </View>
 
-      <PickerSheet
+      <LocationPickerModal
         visible={sheet === "spot"}
-        title="위치 선택"
-        options={spotOptions}
-        selected={spotId}
-        onSelect={setSpotId}
+        initial={picked ? { lat: picked.latitude, lng: picked.longitude } : null}
+        onPick={(loc) => {
+          setPicked(loc);
+          setFormError(null);
+          setSheet(null);
+        }}
         onClose={() => setSheet(null)}
       />
       <PickerSheet
@@ -403,11 +390,9 @@ export default function RecordScreen({
         onSelect={setVisibility}
         onClose={() => setSheet(null)}
       />
-      <PickerSheet
+      <CalendarSheet
         visible={sheet === "date"}
-        title="방문한 날짜"
-        options={dateOptions}
-        selected={visitedAt}
+        value={visitedAt}
         onSelect={setVisitedAt}
         onClose={() => setSheet(null)}
       />

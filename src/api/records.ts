@@ -35,9 +35,18 @@ export async function getWishlist(userId: string): Promise<RecordCard[]> {
   return apiFetch(`/users/${userId}/wishlist`);
 }
 
+export interface NewSpotInput {
+  name: string;
+  latitude: number;
+  longitude: number;
+  address?: string | null;
+}
+
 export interface CreateRecordInput {
   type: RecordType;
-  spotId: string;
+  /** 둘 중 하나: 기존 스팟 id, 또는 지도에서 고른 새 좌표 */
+  spotId?: string;
+  spot?: NewSpotInput;
   caption: string;
   photoUrls: string[];
   visibility: Visibility;
@@ -103,7 +112,16 @@ export async function createRecord(input: CreateRecordInput): Promise<RecordCard
       id: `r-${Date.now()}`,
       type: input.type,
       author: mock.me,
-      spot: mock.spots.find((s) => s.id === input.spotId) ?? mock.spots[0],
+      spot: input.spot
+        ? {
+            id: `s-${Date.now()}`,
+            name: input.spot.name,
+            latitude: input.spot.latitude,
+            longitude: input.spot.longitude,
+            address: input.spot.address ?? null,
+            recordCount: 1,
+          }
+        : mock.spots.find((s) => s.id === input.spotId) ?? mock.spots[0],
       caption: input.caption,
       photos: input.photoUrls.map((url, i) => ({
         id: `p-${Date.now()}-${i}`,

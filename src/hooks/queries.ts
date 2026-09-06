@@ -19,6 +19,7 @@ import {
 } from "../api/records";
 import { getMapRecords, getMapClusters, getSpotRecords } from "../api/map";
 import { getExplore } from "../api/explore";
+import { reverseGeocode } from "../api/geocode";
 import { getMe, getUserProfile, updateMe, deleteMe, UpdateMeInput } from "../api/users";
 import {
   getConversations,
@@ -198,6 +199,18 @@ export function useRecordDetail(id: string) {
 
 export function useSpots() {
   return useQuery({ queryKey: qk.spots(), queryFn: getSpots });
+}
+
+/** 좌표 → 짧은 주소. 위치 선택 화면에서 핀이 멈춘 지점의 주소 자동 채움. */
+export function useReverseGeocode(lat: number | null, lng: number | null) {
+  const key = lat != null && lng != null ? `${lat.toFixed(5)},${lng.toFixed(5)}` : "";
+  return useQuery({
+    queryKey: ["geocode", key],
+    queryFn: () => reverseGeocode(lat as number, lng as number),
+    enabled: !!key,
+    staleTime: Infinity,
+    gcTime: 1000 * 60 * 30,
+  });
 }
 
 // ── Phase 3.5: 콘텐츠 관리 & 설정 ────────────────────────────────────

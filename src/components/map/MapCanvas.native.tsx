@@ -10,6 +10,7 @@ export default function MapCanvas({
   initialCenter,
   onRegionChange,
   onPinPress,
+  flyTo,
 }: MapCanvasProps) {
   const ref = useRef<WebView | null>(null);
   const readyRef = useRef(false);
@@ -55,6 +56,9 @@ export default function MapCanvas({
   React.useEffect(() => {
     if (readyRef.current && myLocation) send({ type: "me", ...myLocation });
   }, [myLocation, send]);
+  React.useEffect(() => {
+    if (readyRef.current && flyTo) send({ type: "flyTo", lat: flyTo.lat, lng: flyTo.lng, zoom: flyTo.zoom });
+  }, [flyTo, send]);
 
   return (
     <WebView

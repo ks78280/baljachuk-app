@@ -9,6 +9,7 @@ export default function MapCanvas({
   initialCenter,
   onRegionChange,
   onPinPress,
+  flyTo,
 }: MapCanvasProps) {
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const readyRef = useRef(false);
@@ -59,6 +60,10 @@ export default function MapCanvas({
   useEffect(() => {
     if (readyRef.current && myLocation) send({ type: "me", ...myLocation });
   }, [myLocation]);
+
+  useEffect(() => {
+    if (readyRef.current && flyTo) send({ type: "flyTo", lat: flyTo.lat, lng: flyTo.lng, zoom: flyTo.zoom });
+  }, [flyTo]);
 
   return (
     <iframe
