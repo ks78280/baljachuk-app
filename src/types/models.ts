@@ -9,6 +9,9 @@ export type NotificationType =
   | "NEW_RECORD"
   | "NEARBY_FRIEND_RECORD";
 
+export type Role = "USER" | "ADMIN";
+export type UserStatus = "ACTIVE" | "SUSPENDED";
+
 export interface User {
   id: string;
   nickname: string;
@@ -16,6 +19,37 @@ export interface User {
   bio: string | null;
   /** GET /users/me 에서만 채워짐 (본인). 설정의 "기본 공개 범위" */
   defaultVisibility?: Visibility;
+  /** 서버 응답엔 항상 포함. 옛 목 데이터 호환 위해 optional. */
+  role?: Role;
+}
+
+/** GET /admin/users 목록 행 */
+export interface AdminUserRow {
+  id: string;
+  email: string;
+  nickname: string;
+  profileImageUrl: string | null;
+  role: Role;
+  status: UserStatus;
+  createdAt: string;
+  recordCount: number;
+  followerCount: number;
+  followingCount: number;
+}
+
+/** GET /admin/users/:id 상세 */
+export interface AdminUserDetail extends AdminUserRow {
+  bio: string | null;
+  likeCount: number;
+  commentCount: number;
+  recentRecords: {
+    id: string;
+    type: RecordType;
+    caption: string;
+    visibility: Visibility;
+    spotName: string;
+    createdAt: string;
+  }[];
 }
 
 /** GET /users/search 결과 — 검색 시점의 팔로우 상태를 함께 내려줌 (F3) */

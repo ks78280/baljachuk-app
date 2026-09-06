@@ -1,5 +1,6 @@
 import {
   useQuery,
+  useInfiniteQuery,
   useMutation,
   useQueryClient,
   QueryClient,
@@ -28,6 +29,14 @@ import {
 } from "../api/dm";
 import { getSpots, searchSpots, unlockSpots } from "../api/spots";
 import { searchUsers } from "../api/users";
+import {
+  getAdminUsers,
+  getAdminUser,
+  updateAdminUser,
+  deleteAdminUser,
+  forceLogoutUser,
+} from "../api/admin";
+import { Role, UserStatus } from "../types/models";
 import {
   getNotifications,
   markNotificationRead,
@@ -85,6 +94,8 @@ export const qk = {
   wishlist: (userId: string) => ["wishlist", userId] as const,
   conversations: () => ["conversations"] as const,
   messages: (convoId: string) => ["messages", convoId] as const,
+  adminUsers: (q: string) => ["admin", "users", q] as const,
+  adminUser: (id: string) => ["admin", "user", id] as const,
 };
 
 /** 한 기록(recordId)을 담고 있는 모든 캐시(상세·타임라인·스팟기록)를 동일하게 패치 */
@@ -565,4 +576,46 @@ export function useMarkConversationRead(convoId: string) {
       );
     },
   });
+}
+
+// ── 관리자 (Phase C) ────────────────────────────────────────────────
+
+export function useAdminUsers(q: string) {
+  return useInfiniteQuery({
+    queryKey: qk.adminUsers(q),
+    queryFn: ({ pageParam }) => getAdminUsers(q, pageParam as string | undefined),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (last) => last.nextCursor ?? undefined,
+  });
+}
+
+export function useAdminUser(id: string) {
+  return useQuery({
+    queryKey: qk.adminUser(id),
+    queryFn: () => getAdminUser(id),
+    enabled: !!id,
+  });
+}
+
+export function useUpdateAdminUser(id: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (patch: { role?: Role; status?: UserStatus }) => updateAdminUser(id, patch),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.adminUser(id) });
+      qc.invalidateQueries({ queryKey: ["admin", "users"] });
+    },
+  });
+}
+
+export function useDeleteAdminUser() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => deleteAdminUser(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["admin", "users"] }),
+  });
+}
+
+export function useForceLogoutUser(id: string) {
+  return useMutation({ mutationFn: () => forceLogoutUser(id) });
 }

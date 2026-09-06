@@ -4,6 +4,7 @@ import { BackIcon } from "../components/icons";
 import PickerSheet, { PickerOption } from "../components/PickerSheet";
 import { useMe, useUpdateMe, useDeleteMe } from "../hooks/queries";
 import { useAuth } from "../lib/auth";
+import { useNav } from "../lib/nav";
 import { Visibility } from "../types/models";
 
 const VIS_LABEL: Record<Visibility, string> = {
@@ -44,6 +45,8 @@ export default function SettingsScreen({ onBack }: { onBack: () => void }) {
   const updateMe = useUpdateMe();
   const deleteMe = useDeleteMe();
   const { signOut } = useAuth();
+  const nav = useNav();
+  const isAdmin = data?.user.role === "ADMIN";
   const [sheet, setSheet] = useState<null | "visibility">(null);
   const [notifyPush, setNotifyPush] = useState(true); // UI 전용 — 실연동 Phase 6
 
@@ -111,6 +114,13 @@ export default function SettingsScreen({ onBack }: { onBack: () => void }) {
             <View className="w-5 h-5 rounded-full bg-white" />
           </View>
         </Pressable>
+
+        {isAdmin && Platform.OS === "web" && (
+          <>
+            <Text className="px-5 pt-6 pb-2 text-[11px] font-bold text-ink-muted">관리자</Text>
+            <Row label="유저 관리" onPress={nav.openAdmin} value="" />
+          </>
+        )}
 
         <Text className="px-5 pt-6 pb-2 text-[11px] font-bold text-ink-muted">기타</Text>
         <Row label="로그아웃" onPress={signOut} />

@@ -17,6 +17,8 @@ export function useNav() {
     openUserProfile: (id: string) => router.push(`/user/${id}`),
     openFollowers: (id: string) => router.push(`/user/${id}/followers`),
     openFollowing: (id: string) => router.push(`/user/${id}/following`),
+    openAdmin: () => router.push("/admin"),
+    openAdminUser: (id: string) => router.push(`/admin/users/${id}`),
     openSettings: () => router.push("/settings"),
     openProfileEdit: () => router.push("/profile/edit"),
     openFeedManage: () => router.push("/feed-manage"),
