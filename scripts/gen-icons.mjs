@@ -6,10 +6,9 @@ import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
 const ASSETS = join(dirname(fileURLToPath(import.meta.url)), "..", "assets");
-
 const CREAM = "#FBEEE3";
 
-// 시안 B 아트 (100 단위 좌표). glow 배경 제외.
+// 시안 B 아트 (100 단위). glow 배경 제외.
 const ART = `
   <polygon points="18,50 50,68 50,82 18,64" fill="#E5502B"/>
   <polygon points="50,68 82,50 82,64 50,82" fill="#C43F1F"/>
@@ -21,10 +20,18 @@ const ART = `
   <path d="M50 46 L40 22 A 11 11 0 1 1 60 22 Z" fill="#FF6B45"/>
   <circle cx="50" cy="18" r="4.4" fill="#FFFFFF"/>
 `;
+const MONO = `
+  <polygon points="18,50 50,68 50,82 18,64"/>
+  <polygon points="50,68 82,50 82,64 50,82"/>
+  <polygon points="50,28 82,46 50,64 18,46"/>
+  <path d="M50 46 L40 22 A 11 11 0 1 1 60 22 Z"/>
+`;
 
-// 아트 시각 중심 ≈ (50, 48.5). scale 은 이 점 기준.
-const scaledArt = (s) =>
-  `<g transform="translate(50 48.5) scale(${s}) translate(-50 -48.5)">${ART}</g>`;
+// 아트 실제 바운딩박스 ≈ x[18,82], y[6.4,82] → 시각 중심 (50, 44.2).
+// 캔버스 정중앙(50,50)에 오도록 옮긴 뒤 s 배로 축소.
+const ART_CY = 44.2;
+const place = (inner, s) =>
+  `<g transform="translate(50 50) scale(${s}) translate(-50 ${-ART_CY})">${inner}</g>`;
 
 const GLOW = `
   <defs><radialGradient id="g" cx="50%" cy="42%" r="58%">
@@ -34,31 +41,22 @@ const GLOW = `
   <rect width="100" height="100" fill="url(#g)"/>
 `;
 
-// 전체 아이콘 (iOS / 스토어): 크림 + glow + 아트(여백 ~13%)
+// 전체 아이콘 (iOS / 스토어): 크림 + glow + 아트(≈ 68% 채움)
 const svgIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 100 100">
-  <rect width="100" height="100" fill="${CREAM}"/>${GLOW}${scaledArt(1.12)}</svg>`;
+  <rect width="100" height="100" fill="${CREAM}"/>${GLOW}${place(ART, 0.95)}</svg>`;
 
-// Android adaptive 전경: 투명 + 아트만, 세이프존 안(~중앙 60%)
-const svgForeground = `<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 100 100">${scaledArt(0.88)}</svg>`;
+// Android adaptive 전경: 투명 + 아트만, 세이프존 여유있게(≈ 50% 채움)
+const svgForeground = `<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 100 100">${place(ART, 0.66)}</svg>`;
 
 // Android adaptive 배경: 크림 + 은은한 glow
 const svgBackground = `<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 100 100">
   <rect width="100" height="100" fill="${CREAM}"/>${GLOW}</svg>`;
 
-// Android monochrome (themed): 실루엣만, 알파 기반. 슬래브+핀, 구멍은 마스크로 제거.
-const MONO = `
-  <polygon points="18,50 50,68 50,82 18,64"/>
-  <polygon points="50,68 82,50 82,64 50,82"/>
-  <polygon points="50,28 82,46 50,64 18,46"/>
-  <path d="M50 46 L40 22 A 11 11 0 1 1 60 22 Z"/>
-`;
+// Android monochrome (themed): 실루엣, 구멍은 마스크로 제거. 전경과 동일 스케일.
 const svgMono = `<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 100 100">
   <defs><mask id="hole"><rect width="100" height="100" fill="#fff"/><circle cx="50" cy="18" r="4.4" fill="#000"/></mask></defs>
-  <g fill="#000000" mask="url(#hole)" transform="translate(50 48.5) scale(0.88) translate(-50 -48.5)">${MONO}</g>
+  <g fill="#000000" mask="url(#hole)" transform="translate(50 50) scale(0.66) translate(-50 ${-ART_CY})">${MONO}</g>
 </svg>`;
-
-// splash (템플릿 잔재 — 안 쓰일 수 있으나 브랜드 맞춤): 투명 + 아트
-const svgSplash = `<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 100 100">${scaledArt(0.9)}</svg>`;
 
 const jobs = [
   ["icon.png", svgIcon, 1024, false],
@@ -66,7 +64,6 @@ const jobs = [
   ["android-icon-background.png", svgBackground, 1024, false],
   ["android-icon-monochrome.png", svgMono, 1024, true],
   ["favicon.png", svgIcon, 96, false],
-  ["splash-icon.png", svgSplash, 1024, true],
 ];
 
 for (const [name, svg, size, alpha] of jobs) {
