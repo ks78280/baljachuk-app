@@ -6,8 +6,8 @@ import {
   Pressable,
   TextInput,
   ActivityIndicator,
-  Platform,
 } from "react-native";
+import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import MapCanvas from "./map/MapCanvas";
 import { MapRegion } from "./map/types";
 import { SmallPinIcon } from "./icons";
@@ -104,7 +104,8 @@ export default function LocationPickerModal({
 
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose} transparent={false}>
-      <View className="flex-1 bg-bg">
+      <SafeAreaProvider>
+      <SafeAreaView edges={["top", "bottom"]} className="flex-1 bg-bg">
         <View className="flex-row items-center gap-3 px-5 pt-2 pb-3">
           <Pressable onPress={onClose} hitSlop={10}>
             <Text className="text-2xl text-ink">×</Text>
@@ -144,10 +145,7 @@ export default function LocationPickerModal({
           </Pressable>
         </View>
 
-        <View
-          className="px-5 pt-3.5 pb-6 border-t border-border bg-bg"
-          style={Platform.OS === "web" ? undefined : { paddingBottom: 28 }}
-        >
+        <View className="px-5 pt-3.5 pb-4 border-t border-border bg-bg">
           <Text className="text-[11px] text-ink-muted mb-1.5" numberOfLines={1}>
             {geo.isFetching ? "주소 확인 중…" : address ?? "지도를 움직여 위치를 맞춰주세요"}
           </Text>
@@ -170,7 +168,8 @@ export default function LocationPickerModal({
             <Text className="text-[15px] font-bold text-white">이 위치로 설정</Text>
           </Pressable>
         </View>
-      </View>
+      </SafeAreaView>
+      </SafeAreaProvider>
     </Modal>
   );
 }

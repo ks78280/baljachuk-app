@@ -83,10 +83,10 @@ export default function AuthScreen() {
         {/* 로고 / 타이틀 */}
         <View className="items-center mb-9">
           <View className="w-16 h-16 rounded-2xl bg-coral items-center justify-center mb-3">
-            <Text className="text-3xl">👣</Text>
+            <Text className="text-3xl">📍</Text>
           </View>
-          <Text className="text-2xl font-black text-ink">발자국</Text>
-          <Text className="text-[13px] text-ink-muted mt-1">걸음마다 남는 지도</Text>
+          <Text className="text-2xl font-black text-ink">TriPin</Text>
+          <Text className="text-[13px] text-ink-muted mt-1">여행지를 핀으로 남기는 지도</Text>
         </View>
 
         {/* 로그인 / 회원가입 토글 */}

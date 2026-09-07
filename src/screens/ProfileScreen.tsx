@@ -49,7 +49,7 @@ export default function ProfileScreen() {
   const { user, stats } = data;
 
   const tabs: { key: ProfileTab; label: string; star?: boolean }[] = [
-    { key: "map", label: "발자국 지도" },
+    { key: "map", label: "TriPin 지도" },
     { key: "timeline", label: "타임라인" },
     { key: "wishlist", label: "위시리스트", star: true },
   ];
@@ -161,7 +161,7 @@ export default function ProfileScreen() {
           <View className="px-5 pt-4" style={{ height: 200 }}>
             <View className="flex-1 rounded-2xl bg-[#F6E3D8] items-center justify-center gap-1">
               <Text className="text-xs text-ink-muted">
-                {tab === "map" ? "발자국 지도" : "내 타임라인"}
+                {tab === "map" ? "TriPin 지도" : "내 타임라인"}
               </Text>
               <Text className="text-[11px] text-ink-muted">
                 하단 탭에서 전체 화면으로 볼 수 있어요

@@ -133,7 +133,7 @@ export default function SettingsScreen({ onBack }: { onBack: () => void }) {
           {deleteMe.isPending && <ActivityIndicator size="small" color="#E5502B" />}
         </Pressable>
 
-        <Text className="px-5 py-6 text-[11px] text-ink-muted">발자국 v1.0.0</Text>
+        <Text className="px-5 py-6 text-[11px] text-ink-muted">TriPin v1.0.0</Text>
       </ScrollView>
 
       <PickerSheet

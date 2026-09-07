@@ -82,7 +82,7 @@ export default function MapScreen() {
   return (
     <View className="flex-1 bg-bg">
       <View className="flex-row items-center justify-between px-5 pb-3.5">
-        <Text className="text-[21px] font-black text-ink">발자국</Text>
+        <Text className="text-[21px] font-black text-ink">TriPin</Text>
         <View className="flex-row items-center gap-4">
           <Pressable onPress={openSearch} hitSlop={8}>
             <SearchIcon />
