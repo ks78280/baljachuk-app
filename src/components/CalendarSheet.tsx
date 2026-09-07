@@ -2,6 +2,7 @@ import React from "react";
 import { Modal, View, Text, Pressable } from "react-native";
 import { Calendar } from "react-native-calendars";
 import { todayISO } from "../lib/date";
+import { haptic } from "../lib/haptics";
 
 /** 방문 날짜 선택용 캘린더 시트. 미래 날짜는 비활성. */
 export default function CalendarSheet({
@@ -35,6 +36,7 @@ export default function CalendarSheet({
             current={value || today}
             maxDate={today}
             onDayPress={(d: { dateString: string }) => {
+              haptic.light();
               onSelect(d.dateString);
               onClose();
             }}

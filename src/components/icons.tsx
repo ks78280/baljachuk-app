@@ -84,6 +84,16 @@ export function CameraIcon({ color = "#E5502B", size = 24 }: IconProps) {
   );
 }
 
+export function GalleryIcon({ color = "#E5502B", size = 24 }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+      <Rect x={3} y={4} width={18} height={16} rx={2} />
+      <Circle cx={8.5} cy={9} r={1.8} />
+      <Path d="M21 16l-4.5-4.5L7 21" />
+    </Svg>
+  );
+}
+
 export function HeartIcon({ color = "#B4694F", size = 16 }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">

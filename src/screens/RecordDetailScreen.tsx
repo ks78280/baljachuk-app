@@ -2,7 +2,6 @@ import React, { useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
-  Image,
   Pressable,
   ScrollView,
   TextInput,
@@ -12,6 +11,7 @@ import {
   Alert,
   Platform,
 } from "react-native";
+import Img from "../components/Img";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BackIcon, CommentIcon, LockIcon, SmallPinIcon } from "../components/icons";
 import { ErrorView } from "../components/states";
@@ -33,7 +33,7 @@ import {
 
 function Avatar({ uri, size = 32 }: { uri: string | null; size?: number }) {
   return uri ? (
-    <Image source={{ uri }} style={{ width: size, height: size, borderRadius: size / 2 }} className="bg-coral-soft" />
+    <Img source={{ uri }} style={{ width: size, height: size, borderRadius: size / 2 }} className="bg-coral-soft" />
   ) : (
     <View style={{ width: size, height: size, borderRadius: size / 2 }} className="bg-[#FFB199]" />
   );
@@ -58,12 +58,11 @@ function PhotoCarousel({ record }: { record: RecordCard }) {
         onMomentumScrollEnd={onScroll}
       >
         {record.photos.map((p) => (
-          <Image
+          <Img
             key={p.id}
             source={{ uri: p.originalUrl }}
             style={{ width, height: width * 0.75 }}
             className="bg-coral-soft"
-            resizeMode="cover"
           />
         ))}
       </ScrollView>

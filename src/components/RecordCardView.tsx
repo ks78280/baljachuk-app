@@ -1,5 +1,6 @@
 import React from "react";
-import { View, Text, Image, Pressable } from "react-native";
+import { View, Text, Pressable } from "react-native";
+import Img from "../components/Img";
 import { RecordCard } from "../types/models";
 import { formatRelative } from "../lib/time";
 import { useNav } from "../lib/nav";
@@ -8,7 +9,7 @@ import LikeButton from "./LikeButton";
 
 function Avatar({ uri }: { uri: string | null }) {
   return uri ? (
-    <Image source={{ uri }} className="w-8 h-8 rounded-full bg-coral-soft" />
+    <Img source={{ uri }} className="w-8 h-8 rounded-full bg-coral-soft" />
   ) : (
     <View className="w-8 h-8 rounded-full bg-[#FFB199]" />
   );
@@ -65,10 +66,9 @@ export default function RecordCardView({
           </View>
         </View>
       ) : record.photos.length > 0 ? (
-        <Image
+        <Img
           source={{ uri: record.photos[0].thumbnailUrl }}
           className="w-full h-[180px] bg-coral-soft"
-          resizeMode="cover"
         />
       ) : null}
 

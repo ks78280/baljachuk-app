@@ -4,18 +4,23 @@ import {
   Text,
   Pressable,
   ScrollView,
-  Image,
-  Alert,
-  Platform,
   TextInput,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useQueryClient } from "@tanstack/react-query";
+import Img from "../components/Img";
 import { BackIcon, CameraIcon, SmallPinIcon } from "../components/icons";
 import PickerSheet, { PickerOption } from "../components/PickerSheet";
 import LocationPickerModal, { PickedLocation } from "../components/LocationPickerModal";
 import CalendarSheet from "../components/CalendarSheet";
-import { MAX_PHOTOS, takePhoto, pickFromLibrary } from "../lib/imagePicker";
+import { PhotoSourceSheet, PermissionSheet } from "../components/PhotoSourceSheet";
+import {
+  MAX_PHOTOS,
+  pickPhotos,
+  openAppSettings,
+  type PhotoSource,
+} from "../lib/imagePicker";
+import { haptic } from "../lib/haptics";
 import { useKeyboardHeight } from "../lib/useKeyboard";
 import { todayISO, formatDot } from "../lib/date";
 import { createRecord } from "../api/records";
@@ -54,8 +59,11 @@ export default function RecordScreen({
   const [photos, setPhotos] = useState<string[]>([]);
 
   const [sheet, setSheet] = useState<SheetKind | null>(null);
+  const [photoSheet, setPhotoSheet] = useState(false);
+  const [permBlocked, setPermBlocked] = useState<PhotoSource | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [uploadPct, setUploadPct] = useState<number | null>(null);
   const [prefilled, setPrefilled] = useState(false);
 
   // 수정 모드: 기존 기록 값으로 1회 프리필
@@ -84,30 +92,25 @@ export default function RecordScreen({
   // ── 사진 ─────────────────────────────
   function appendPhotos(uris: string[]) {
     if (uris.length === 0) return;
+    haptic.light();
     setFormError(null);
     setPhotos((prev) => [...prev, ...uris].slice(0, MAX_PHOTOS));
   }
   function removePhoto(index: number) {
+    haptic.light();
     setPhotos((prev) => prev.filter((_, i) => i !== index));
   }
   function addPhoto() {
+    if (MAX_PHOTOS - photos.length <= 0) return;
+    haptic.light();
+    setPhotoSheet(true);
+  }
+  async function onPickSource(source: PhotoSource) {
+    setPhotoSheet(false);
     const remaining = MAX_PHOTOS - photos.length;
-    if (remaining <= 0) return;
-    if (Platform.OS === "web") {
-      void pickFromLibrary(remaining).then(appendPhotos);
-      return;
-    }
-    Alert.alert("사진 추가", undefined, [
-      {
-        text: "카메라로 촬영",
-        onPress: () => void takePhoto().then((uri) => uri && appendPhotos([uri])),
-      },
-      {
-        text: "갤러리에서 선택",
-        onPress: () => void pickFromLibrary(remaining).then(appendPhotos),
-      },
-      { text: "취소", style: "cancel" },
-    ]);
+    const r = await pickPhotos(source, remaining);
+    if (r.status === "ok") appendPhotos(r.uris);
+    else if (r.status === "blocked") setPermBlocked(source);
   }
 
   // ── 시트 옵션 ─────────────────────────
@@ -153,9 +156,12 @@ export default function RecordScreen({
 
     setSubmitting(true);
     setFormError(null);
+    setUploadPct(isWish ? null : 0);
     try {
       // 로컬 사진 URI → 서버 업로드(목이면 그대로) → 받은 URL로 기록 생성
-      const photoUrls = isWish ? [] : await uploadPhotos(photos);
+      const photoUrls = isWish
+        ? []
+        : await uploadPhotos(photos, (p) => setUploadPct(p));
       await createRecord({
         type,
         spot: {
@@ -172,13 +178,16 @@ export default function RecordScreen({
       queryClient.invalidateQueries({ queryKey: ["timeline"] });
       queryClient.invalidateQueries({ queryKey: ["map-records"] });
       queryClient.invalidateQueries({ queryKey: ["my-records"] });
+      haptic.success();
       onBack();
     } catch (e) {
       console.warn("[record submit]", e);
+      haptic.warning();
       const msg = e instanceof Error ? e.message : String(e);
       setFormError(msg || "게시에 실패했습니다. 잠시 후 다시 시도해주세요");
     } finally {
       setSubmitting(false);
+      setUploadPct(null);
     }
   }
 
@@ -249,11 +258,15 @@ export default function RecordScreen({
         >
           {photos.map((uri, index) => (
             <View key={`${uri}-${index}`} className="relative">
-              <Image
+              <Img
                 source={{ uri }}
                 className="w-[104px] h-[104px] rounded-2xl bg-coral-soft"
-                resizeMode="cover"
               />
+              {index === 0 && photos.length > 1 && (
+                <View className="absolute bottom-1.5 left-1.5 bg-black/55 rounded-full px-2 py-0.5">
+                  <Text className="text-[10px] font-bold text-white">대표</Text>
+                </View>
+              )}
               {!editing && (
                 <Pressable
                   onPress={() => removePhoto(index)}
@@ -355,11 +368,19 @@ export default function RecordScreen({
       </ScrollView>
 
       <View style={{ paddingHorizontal: 20, paddingTop: 12, paddingBottom: Math.max(insets.bottom, 20) }}>
+        {submitting && !isWish && uploadPct != null && (
+          <View className="h-1.5 rounded-full bg-coral-soft mb-2.5 overflow-hidden">
+            <View
+              className="h-full bg-coral rounded-full"
+              style={{ width: `${Math.round(uploadPct * 100)}%` }}
+            />
+          </View>
+        )}
         <Pressable
           onPress={submit}
           disabled={submitting}
           className={`w-full items-center py-4 bg-coral rounded-2xl shadow-lg ${
-            submitting ? "opacity-50" : ""
+            submitting ? "opacity-60" : ""
           }`}
         >
           <Text className="text-[15px] font-bold text-white">
@@ -368,7 +389,9 @@ export default function RecordScreen({
                 ? "저장 중..."
                 : "저장하기"
               : submitting
-                ? "게시 중..."
+                ? uploadPct != null && uploadPct < 1
+                  ? `사진 업로드 ${Math.round(uploadPct * 100)}%`
+                  : "게시하는 중..."
                 : "게시하기"}
           </Text>
         </Pressable>
@@ -383,6 +406,20 @@ export default function RecordScreen({
           setSheet(null);
         }}
         onClose={() => setSheet(null)}
+      />
+      <PhotoSourceSheet
+        visible={photoSheet}
+        onPick={onPickSource}
+        onClose={() => setPhotoSheet(false)}
+      />
+      <PermissionSheet
+        visible={!!permBlocked}
+        kind={permBlocked}
+        onOpenSettings={() => {
+          setPermBlocked(null);
+          openAppSettings();
+        }}
+        onClose={() => setPermBlocked(null)}
       />
       <PickerSheet
         visible={sheet === "visibility"}

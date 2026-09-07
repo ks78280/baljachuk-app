@@ -1,5 +1,6 @@
 import React from "react";
-import { View, Text, Image, Pressable } from "react-native";
+import { View, Text, Pressable } from "react-native";
+import Img from "../components/Img";
 import { UserSearchResult } from "../types/models";
 import { CommentIcon } from "./icons";
 import FollowButton from "./FollowButton";
@@ -21,7 +22,7 @@ export default function UserRow({
         className="flex-1 flex-row items-center gap-2.5"
       >
         {user.profileImageUrl ? (
-          <Image source={{ uri: user.profileImageUrl }} className="w-11 h-11 rounded-full bg-coral-soft" />
+          <Img source={{ uri: user.profileImageUrl }} className="w-11 h-11 rounded-full bg-coral-soft" />
         ) : (
           <View className="w-11 h-11 rounded-full bg-[#FFCBB4]" />
         )}

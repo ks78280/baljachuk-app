@@ -5,13 +5,14 @@ import {
   TextInput,
   Pressable,
   ScrollView,
-  Image,
   ActivityIndicator,
 } from "react-native";
+import Img from "../components/Img";
 import { BackIcon, CameraIcon } from "../components/icons";
 import { useMe, useUpdateMe } from "../hooks/queries";
 import { useKeyboardHeight } from "../lib/useKeyboard";
-import { pickFromLibrary } from "../lib/imagePicker";
+import { pickPhotos } from "../lib/imagePicker";
+import { haptic } from "../lib/haptics";
 import { ApiRequestError } from "../types/api";
 
 export default function ProfileEditScreen({ onBack }: { onBack: () => void }) {
@@ -37,8 +38,11 @@ export default function ProfileEditScreen({ onBack }: { onBack: () => void }) {
   const nickOk = nickname.trim().length >= 2;
 
   async function pickImage() {
-    const uris = await pickFromLibrary(1);
-    if (uris[0]) setImage(uris[0]);
+    const r = await pickPhotos("library", 1);
+    if (r.status === "ok" && r.uris[0]) {
+      haptic.light();
+      setImage(r.uris[0]);
+    }
   }
 
   function save() {
@@ -88,7 +92,7 @@ export default function ProfileEditScreen({ onBack }: { onBack: () => void }) {
         <View className="items-center py-6">
           <Pressable onPress={pickImage} className="relative">
             {image ? (
-              <Image source={{ uri: image }} className="w-24 h-24 rounded-full bg-coral-soft" />
+              <Img source={{ uri: image }} className="w-24 h-24 rounded-full bg-coral-soft" />
             ) : (
               <View className="w-24 h-24 rounded-full bg-[#FF8A5C]" />
             )}

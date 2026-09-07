@@ -1,5 +1,6 @@
 import React from "react";
-import { View, Text, Image, Pressable, ScrollView } from "react-native";
+import { View, Text, Pressable, ScrollView } from "react-native";
+import Img from "../components/Img";
 import { BackIcon } from "../components/icons";
 import { ErrorView, EmptyView } from "../components/states";
 import { SearchRowsSkeleton } from "../components/skeletons";
@@ -40,7 +41,7 @@ function Row({
       style={n.isRead ? undefined : { backgroundColor: "#FFF3EC" }}
     >
       {n.actor.profileImageUrl ? (
-        <Image source={{ uri: n.actor.profileImageUrl }} className="w-10 h-10 rounded-full bg-coral-soft" />
+        <Img source={{ uri: n.actor.profileImageUrl }} className="w-10 h-10 rounded-full bg-coral-soft" />
       ) : (
         <View className="w-10 h-10 rounded-full bg-[#FFCBB4]" />
       )}

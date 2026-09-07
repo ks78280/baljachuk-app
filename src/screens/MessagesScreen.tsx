@@ -1,5 +1,6 @@
 import React from "react";
-import { View, Text, Pressable, ScrollView, Image } from "react-native";
+import { View, Text, Pressable, ScrollView } from "react-native";
+import Img from "../components/Img";
 import { BackIcon } from "../components/icons";
 import { SearchRowsSkeleton } from "../components/skeletons";
 import { EmptyView, ErrorView } from "../components/states";
@@ -23,7 +24,7 @@ function Row({
       className="flex-row items-center gap-3 px-5 py-3.5 border-b border-border bg-white"
     >
       {convo.other.profileImageUrl ? (
-        <Image
+        <Img
           source={{ uri: convo.other.profileImageUrl }}
           className="w-12 h-12 rounded-full bg-coral-soft"
         />

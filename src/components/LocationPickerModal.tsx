@@ -13,6 +13,7 @@ import { MapRegion } from "./map/types";
 import { SmallPinIcon } from "./icons";
 import { useReverseGeocode } from "../hooks/queries";
 import { getCurrentLocation } from "../lib/location";
+import { haptic } from "../lib/haptics";
 
 export interface PickedLocation {
   name: string;
@@ -92,6 +93,7 @@ export default function LocationPickerModal({
 
   function confirm() {
     if (!center || !name.trim()) return;
+    haptic.medium();
     onPick({
       name: name.trim().slice(0, 120),
       latitude: center.lat,

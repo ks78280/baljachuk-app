@@ -1,5 +1,6 @@
 import React from "react";
-import { View, Text, Pressable, ScrollView, Image, Alert, Platform } from "react-native";
+import { View, Text, Pressable, ScrollView, Alert, Platform } from "react-native";
+import Img from "../components/Img";
 import { BackIcon, SmallPinIcon } from "../components/icons";
 import { RecordCardSkeleton } from "../components/skeletons";
 import { EmptyView, ErrorView } from "../components/states";
@@ -35,7 +36,7 @@ function ManageRow({
     <View className="px-5 py-3.5 border-b border-border bg-white">
       <View className="flex-row gap-3">
         {record.photos[0] ? (
-          <Image
+          <Img
             source={{ uri: record.photos[0].thumbnailUrl }}
             className="w-14 h-14 rounded-xl bg-coral-soft"
           />

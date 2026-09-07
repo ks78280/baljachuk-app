@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, ScrollView, Image, Pressable, Alert, Platform } from "react-native";
+import { View, Text, ScrollView, Pressable, Alert, Platform } from "react-native";
+import Img from "../components/Img";
 import { useUserProfile, useWishlist, useOpenConversation } from "../hooks/queries";
 import { useNav } from "../lib/nav";
 import { useAuth } from "../lib/auth";
@@ -100,7 +101,7 @@ export default function UserProfileScreen({
       <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 24 }}>
         <View className="px-5 pt-3.5 pb-4 items-center">
           {user.profileImageUrl ? (
-            <Image
+            <Img
               source={{ uri: user.profileImageUrl }}
               className="w-[76px] h-[76px] rounded-full bg-coral-soft mb-3"
             />

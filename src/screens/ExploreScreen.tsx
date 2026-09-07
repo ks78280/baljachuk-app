@@ -3,11 +3,11 @@ import {
   View,
   Text,
   ScrollView,
-  Image,
   Pressable,
   RefreshControl,
   useWindowDimensions,
 } from "react-native";
+import Img from "../components/Img";
 import { useExplore } from "../hooks/queries";
 import { useNav } from "../lib/nav";
 import { SearchIcon } from "../components/icons";
@@ -49,7 +49,7 @@ function TrendingCard({
   return (
     <Pressable style={{ width }} onPress={() => onPress(item.spot.id)}>
       {item.coverImageUrl ? (
-        <Image
+        <Img
           source={{ uri: item.coverImageUrl }}
           style={{ width, height: 96 }}
           className="rounded-xl bg-coral-soft"
@@ -69,7 +69,7 @@ function PersonRow({ item }: { item: SuggestedUser }) {
   return (
     <View className="flex-row items-center gap-3 mb-4">
       {item.user.profileImageUrl ? (
-        <Image source={{ uri: item.user.profileImageUrl }} className="w-11 h-11 rounded-full bg-coral-soft" />
+        <Img source={{ uri: item.user.profileImageUrl }} className="w-11 h-11 rounded-full bg-coral-soft" />
       ) : (
         <View className="w-11 h-11 rounded-full bg-[#FFCBB4]" />
       )}
