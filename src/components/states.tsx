@@ -1,15 +1,6 @@
 import React from "react";
-import { View, Text, ActivityIndicator, Pressable } from "react-native";
+import { View, Text, Pressable } from "react-native";
 import { ApiRequestError } from "../types/api";
-
-export function LoadingView({ label = "불러오는 중..." }: { label?: string }) {
-  return (
-    <View className="flex-1 items-center justify-center py-16">
-      <ActivityIndicator color="#FF6B45" />
-      <Text className="mt-2 text-xs text-ink-muted">{label}</Text>
-    </View>
-  );
-}
 
 export function ErrorView({
   message,

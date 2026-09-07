@@ -45,7 +45,15 @@
         }
       ],
       "expo-notifications",
-      "expo-image"
+      "expo-image",
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "최근 사진을 빠르게 첨부하기 위해 사진 접근 권한이 필요합니다.",
+          "savePhotosPermission": "사진을 저장하기 위해 권한이 필요합니다.",
+          "isAccessMediaLocationEnabled": false
+        }
+      ]
     ],
     "scheme": "baljachuk",
     "extra": {

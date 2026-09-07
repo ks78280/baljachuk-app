@@ -5,6 +5,7 @@ import {
   Pressable,
   ScrollView,
   TextInput,
+  Platform,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useQueryClient } from "@tanstack/react-query";
@@ -14,9 +15,12 @@ import PickerSheet, { PickerOption } from "../components/PickerSheet";
 import LocationPickerModal, { PickedLocation } from "../components/LocationPickerModal";
 import CalendarSheet from "../components/CalendarSheet";
 import { PhotoSourceSheet, PermissionSheet } from "../components/PhotoSourceSheet";
+import RecentPhotosStrip from "../components/RecentPhotosStrip";
+import SuccessOverlay from "../components/SuccessOverlay";
 import {
   MAX_PHOTOS,
   pickPhotos,
+  normalizePhotos,
   openAppSettings,
   type PhotoSource,
 } from "../lib/imagePicker";
@@ -64,6 +68,7 @@ export default function RecordScreen({
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [uploadPct, setUploadPct] = useState<number | null>(null);
+  const [posted, setPosted] = useState(false);
   const [prefilled, setPrefilled] = useState(false);
 
   // 수정 모드: 기존 기록 값으로 1회 프리필
@@ -90,11 +95,14 @@ export default function RecordScreen({
   }
 
   // ── 사진 ─────────────────────────────
-  function appendPhotos(uris: string[]) {
+  async function appendPhotos(uris: string[]) {
     if (uris.length === 0) return;
+    const room = MAX_PHOTOS - photos.length;
+    if (room <= 0) return;
+    const normalized = await normalizePhotos(uris.slice(0, room));
     haptic.light();
     setFormError(null);
-    setPhotos((prev) => [...prev, ...uris].slice(0, MAX_PHOTOS));
+    setPhotos((prev) => [...prev, ...normalized].slice(0, MAX_PHOTOS));
   }
   function removePhoto(index: number) {
     haptic.light();
@@ -109,7 +117,7 @@ export default function RecordScreen({
     setPhotoSheet(false);
     const remaining = MAX_PHOTOS - photos.length;
     const r = await pickPhotos(source, remaining);
-    if (r.status === "ok") appendPhotos(r.uris);
+    if (r.status === "ok") void appendPhotos(r.uris);
     else if (r.status === "blocked") setPermBlocked(source);
   }
 
@@ -179,7 +187,7 @@ export default function RecordScreen({
       queryClient.invalidateQueries({ queryKey: ["map-records"] });
       queryClient.invalidateQueries({ queryKey: ["my-records"] });
       haptic.success();
-      onBack();
+      setPosted(true); // 성공 오버레이 → onDone 에서 onBack
     } catch (e) {
       console.warn("[record submit]", e);
       haptic.warning();
@@ -301,6 +309,14 @@ export default function RecordScreen({
               ? "위시는 사진 없이 등록할 수 있어요"
               : "사진을 1장 이상 추가해주세요"}
         </Text>
+
+        {/* 최근 사진 빠른 첨부 (네이티브) */}
+        {!editing && Platform.OS !== "web" && (
+          <RecentPhotosStrip
+            onPick={(uri) => void appendPhotos([uri])}
+            disabled={!canAddMore}
+          />
+        )}
 
         {/* 위치 */}
         <View className="mb-4">
@@ -434,6 +450,12 @@ export default function RecordScreen({
         value={visitedAt}
         onSelect={setVisitedAt}
         onClose={() => setSheet(null)}
+      />
+
+      <SuccessOverlay
+        visible={posted}
+        message={type === "WISH" ? "담았어요!" : "게시 완료!"}
+        onDone={onBack}
       />
     </View>
   );
