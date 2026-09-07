@@ -49,7 +49,7 @@ export function setSessionExpiredHandler(fn: SessionExpiredHandler): void {
 // 동시에 여러 요청이 401 을 받아도 refresh 는 한 번만 실행한다.
 let refreshPromise: Promise<boolean> | null = null;
 
-async function runRefresh(): Promise<boolean> {
+export async function runRefresh(): Promise<boolean> {
   const rt = getRefreshToken();
   if (!rt) return false;
   try {

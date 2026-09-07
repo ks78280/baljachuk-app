@@ -173,8 +173,10 @@ export default function RecordScreen({
       queryClient.invalidateQueries({ queryKey: ["map-records"] });
       queryClient.invalidateQueries({ queryKey: ["my-records"] });
       onBack();
-    } catch {
-      setFormError("게시에 실패했습니다. 잠시 후 다시 시도해주세요");
+    } catch (e) {
+      console.warn("[record submit]", e);
+      const msg = e instanceof Error ? e.message : String(e);
+      setFormError(msg || "게시에 실패했습니다. 잠시 후 다시 시도해주세요");
     } finally {
       setSubmitting(false);
     }
