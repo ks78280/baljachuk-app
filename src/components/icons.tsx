@@ -84,6 +84,16 @@ export function CameraIcon({ color = "#E5502B", size = 24 }: IconProps) {
   );
 }
 
+export function LocateIcon({ color = "#2B1710", size = 20 }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.9} strokeLinecap="round">
+      <Circle cx={12} cy={12} r={7} />
+      <Circle cx={12} cy={12} r={2.4} fill={color} stroke="none" />
+      <Path d="M12 2v3.5M12 18.5V22M2 12h3.5M18.5 12H22" />
+    </Svg>
+  );
+}
+
 export function GalleryIcon({ color = "#E5502B", size = 24 }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">

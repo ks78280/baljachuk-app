@@ -71,13 +71,18 @@ export default function BottomTabBar({ state, navigation }: BottomTabBarProps) {
       <View style={{ width: 56 }} />
       {right.map(renderTab)}
 
-      <Pressable
-        onPress={() => router.push("/record/new")}
-        className="absolute self-center -top-5 w-14 h-14 rounded-full bg-coral items-center justify-center shadow-lg"
-        style={{ left: "50%", marginLeft: -28 }}
+      {/* 중앙 글 작성 버튼 — 좌우 꽉 채운 래퍼에서 items-center 로 정확히 가운데 */}
+      <View
+        className="absolute left-0 right-0 -top-5 items-center"
+        pointerEvents="box-none"
       >
-        <PlusIcon />
-      </Pressable>
+        <Pressable
+          onPress={() => router.push("/record/new")}
+          className="w-14 h-14 rounded-full bg-coral items-center justify-center shadow-lg"
+        >
+          <PlusIcon />
+        </Pressable>
+      </View>
     </View>
   );
 }

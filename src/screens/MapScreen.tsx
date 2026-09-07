@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { View, Text, Pressable, ActivityIndicator, ScrollView, RefreshControl } from "react-native";
+import { View, Text, Pressable, ActivityIndicator } from "react-native";
 import { BBox, MapScope } from "../types/api";
 import {
   useMapRecords,
@@ -9,9 +9,10 @@ import {
 } from "../hooks/queries";
 import { useNav } from "../lib/nav";
 import { getCurrentLocation } from "../lib/location";
+import { haptic } from "../lib/haptics";
 import MapCanvas from "../components/map/MapCanvas";
 import { MapMarkerVM, MapRegion } from "../components/map/types";
-import { SearchIcon, BellIcon } from "../components/icons";
+import { SearchIcon, BellIcon, LocateIcon } from "../components/icons";
 
 // 클러스터 ↔ 개별 핀 전환 줌 (설계서 §11.2)
 const PIN_ZOOM = 12;
@@ -28,6 +29,8 @@ export default function MapScreen() {
   const [scope, setScope] = useState<MapScope>("all");
   const [region, setRegion] = useState<MapRegion>({ ...INITIAL_BBOX, zoom: INITIAL.zoom });
   const [myLoc, setMyLoc] = useState<{ lat: number; lng: number } | null>(null);
+  const [flyTo, setFlyTo] = useState<{ lat: number; lng: number; zoom?: number } | null>(null);
+  const [locating, setLocating] = useState(false);
   const { openSpot, openSearch, openNotifications, openProfile } = useNav();
   const unread = useUnreadNotificationCount();
   const unlock = useUnlockSpots();
@@ -40,11 +43,17 @@ export default function MapScreen() {
   const clustersQ = useMapClusters(bbox, region.zoom, scope, showClusters);
   const loading = showClusters ? clustersQ.isLoading : pinsQ.isLoading;
   const errored = showClusters ? clustersQ.isError : pinsQ.isError;
-  const refreshing = showClusters ? clustersQ.isRefetching : pinsQ.isRefetching;
 
-  const onRefresh = () => {
-    (showClusters ? clustersQ : pinsQ).refetch();
-  };
+  async function goToMyLocation() {
+    if (locating) return;
+    haptic.light();
+    setLocating(true);
+    const loc = await getCurrentLocation();
+    setLocating(false);
+    if (!loc) return;
+    setMyLoc(loc);
+    setFlyTo({ lat: loc.lat, lng: loc.lng, zoom: 15 });
+  }
 
   // 지도 진입 시 1회: 현재 위치 조회 → 반경 내 잠긴 스팟 해제 (설계서 §11.4.3)
   useEffect(() => {
@@ -99,15 +108,6 @@ export default function MapScreen() {
         </View>
       </View>
 
-      {/* 지도는 스크롤 대상이 아니지만, 콘텐츠가 화면을 꽉 채우게 두고 최상단
-          오버스크롤(당겨서 새로고침)만 살린다. */}
-      <ScrollView
-        className="flex-1"
-        contentContainerStyle={{ flexGrow: 1 }}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#FF6B45" colors={["#FF6B45"]} />
-        }
-      >
       <View className="flex-1 relative overflow-hidden bg-[#F3ECE2]">
         <MapCanvas
           markers={markers}
@@ -115,6 +115,7 @@ export default function MapScreen() {
           initialCenter={INITIAL}
           onRegionChange={setRegion}
           onPinPress={({ spotId }) => spotId && openSpot(spotId)}
+          flyTo={flyTo}
         />
 
         {/* scope 토글 */}
@@ -150,12 +151,24 @@ export default function MapScreen() {
           </View>
         )}
         {showClusters && (
-          <View className="absolute right-4 bottom-4 bg-white/90 rounded-full px-3 py-1">
+          <View className="absolute left-4 bottom-4 bg-white/90 rounded-full px-3 py-1">
             <Text className="text-[10px] font-semibold text-ink-muted">확대하면 개별 기록</Text>
           </View>
         )}
+
+        {/* 현재 위치로 이동 */}
+        <Pressable
+          onPress={goToMyLocation}
+          className="absolute right-4 bottom-4 w-11 h-11 rounded-full bg-white items-center justify-center shadow"
+          hitSlop={6}
+        >
+          {locating ? (
+            <ActivityIndicator color="#FF6B45" size="small" />
+          ) : (
+            <LocateIcon color="#2B1710" size={20} />
+          )}
+        </Pressable>
       </View>
-      </ScrollView>
     </View>
   );
 }
